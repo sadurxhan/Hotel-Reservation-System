@@ -1,0 +1,15 @@
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+out/
+
+# Compiled Java files
+*.class
+
+# Maven
+target/
+
+# OS files
+.DS_Store
+Thumbs.db
