@@ -7,6 +7,7 @@ public class Reservation {
     private Long id;
     private String guestName;
     private String guestEmail;
+    private String guestPhone;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private String roomType;
@@ -15,17 +16,22 @@ public class Reservation {
     public Reservation() {
     }
 
-    public Reservation(Long id, String guestName, String guestEmail, LocalDate checkInDate, LocalDate checkOutDate, String roomType, String status) {
+    public Reservation(Long id, String guestName, String guestEmail,
+                       String guestPhone, LocalDate checkInDate,
+                       LocalDate checkOutDate, String roomType,
+                       String status) {
+
         this.id = id;
         this.guestName = guestName;
         this.guestEmail = guestEmail;
+        this.guestPhone = guestPhone;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.roomType = roomType;
         this.status = status;
     }
 
-    // Getters and Setters
+    // Get ID
     public Long getId() {
         return id;
     }
@@ -34,6 +40,7 @@ public class Reservation {
         this.id = id;
     }
 
+    // Get guest name
     public String getGuestName() {
         return guestName;
     }
@@ -42,6 +49,7 @@ public class Reservation {
         this.guestName = guestName;
     }
 
+    // Get guest email
     public String getGuestEmail() {
         return guestEmail;
     }
@@ -50,6 +58,16 @@ public class Reservation {
         this.guestEmail = guestEmail;
     }
 
+    // Get guest phone
+    public String getGuestPhone() {
+        return guestPhone;
+    }
+
+    public void setGuestPhone(String guestPhone) {
+        this.guestPhone = guestPhone;
+    }
+
+    // Get check-in date
     public LocalDate getCheckInDate() {
         return checkInDate;
     }
@@ -58,6 +76,7 @@ public class Reservation {
         this.checkInDate = checkInDate;
     }
 
+    // Get check-out date
     public LocalDate getCheckOutDate() {
         return checkOutDate;
     }
@@ -66,6 +85,7 @@ public class Reservation {
         this.checkOutDate = checkOutDate;
     }
 
+    // Get room type
     public String getRoomType() {
         return roomType;
     }
@@ -74,6 +94,7 @@ public class Reservation {
         this.roomType = roomType;
     }
 
+    // Get reservation status
     public String getStatus() {
         return status;
     }
