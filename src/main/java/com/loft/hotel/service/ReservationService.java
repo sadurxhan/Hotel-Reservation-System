@@ -1,3 +1,4 @@
+
 package com.loft.hotel.service;
 
 import com.loft.hotel.entity.Reservation;
@@ -17,9 +18,7 @@ public class ReservationService {
         this.repository = repository;
     }
 
-    /**
-     * Checks whether the requested dates are available.
-     */
+    // Check whether the requested dates are available
     public boolean isAvailable(LocalDate checkIn, LocalDate checkOut) {
 
         if (checkIn == null || checkOut == null) {
@@ -38,145 +37,110 @@ public class ReservationService {
         );
     }
 
-    /**
-     * Creates a new reservation.
-     *
-     * The reservation starts with PENDING status.
-     */
+    // Create a new reservation
+    // The reservation starts with PENDING status
     public synchronized Reservation createReservation(Reservation reservation) {
 
         // Validate guest name
         if (reservation.getGuestName() == null
                 || reservation.getGuestName().isBlank()) {
 
-            throw new IllegalArgumentException(
-                    "Guest name is required."
-            );
+            throw new IllegalArgumentException("Guest name is required.");
         }
 
         // Validate email
         if (reservation.getGuestEmail() == null
                 || reservation.getGuestEmail().isBlank()) {
 
-            throw new IllegalArgumentException(
-                    "Guest email is required."
-            );
+            throw new IllegalArgumentException("Guest email is required.");
         }
 
         // Validate room type
         if (reservation.getRoomType() == null
                 || reservation.getRoomType().isBlank()) {
 
-            throw new IllegalArgumentException(
-                    "Room type is required."
-            );
+            throw new IllegalArgumentException("Room type is required.");
         }
 
-        // Validate dates
+        // Validate check-in and check-out dates
         if (reservation.getCheckInDate() == null
                 || reservation.getCheckOutDate() == null) {
 
-            throw new IllegalArgumentException(
-                    "Please choose both check-in and check-out dates."
-            );
+            throw new IllegalArgumentException("Please choose both check-in and check-out dates.");
         }
 
-        // Check-in cannot be in the past
+        // Check-in date cannot be in the past
         if (reservation.getCheckInDate().isBefore(LocalDate.now())) {
 
-            throw new IllegalArgumentException(
-                    "Check-in date cannot be in the past."
-            );
+            throw new IllegalArgumentException("Check-in date cannot be in the past.");
         }
 
-        // Check-out must be after check-in
+        // Check-out date must be after check-in date
         if (!reservation.getCheckOutDate()
                 .isAfter(reservation.getCheckInDate())) {
 
-            throw new IllegalArgumentException(
-                    "Check-out date must be after check-in date."
-            );
+            throw new IllegalArgumentException("Check-out date must be after check-in date.");
         }
 
-        // Check room/date availability
+        // Check whether the selected dates are already booked
         if (!isAvailable(
                 reservation.getCheckInDate(),
                 reservation.getCheckOutDate())) {
 
-            throw new IllegalArgumentException(
-                    "Those dates are already booked. Please choose different dates."
-            );
+            throw new IllegalArgumentException("Those dates are already booked. Please choose different dates.");
         }
 
-        /*
-         * New reservations start as PENDING.
-         *
-         * This also locks the selected dates so another
-         * reservation cannot use the same dates while
-         * this reservation is waiting for payment.
-         */
+        // New reservations start with PENDING status
         reservation.setStatus("PENDING");
 
         return repository.save(reservation);
     }
 
-    /**
-     * Gets a reservation by ID.
-     */
+    // Get a reservation by its ID
     public Reservation getById(Long id) {
 
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new NoSuchElementException(
-                                "Reservation " + id + " not found"
-                        )
-                );
+                        new NoSuchElementException("Reservation " + id + " not found"));
     }
 
-    /**
-     * Gets all reservations.
-     */
+    // Get all reservations
     public List<Reservation> getAll() {
         return repository.findAll();
     }
 
-    /**
-     * Confirms a PENDING reservation.
-     *
-     * This can later be called after successful payment.
-     */
+    // Confirm a PENDING reservation
+    // This can be called after successful payment
     public Reservation confirm(Long id) {
 
         Reservation reservation = getById(id);
 
         if (!"PENDING".equals(reservation.getStatus())) {
 
-            throw new IllegalStateException(
-                    "Only PENDING reservations can be confirmed."
-            );
+            throw new IllegalStateException("Only PENDING reservations can be confirmed.");
         }
 
+        // Change the status to CONFIRMED
         reservation.setStatus("CONFIRMED");
 
         return repository.save(reservation);
     }
 
-    /**
-     * Cancels a reservation.
-     */
+    // Cancel a reservation
     public Reservation cancel(Long id) {
 
         Reservation reservation = getById(id);
 
         if ("CANCELLED".equals(reservation.getStatus())) {
 
-            throw new IllegalStateException(
-                    "Reservation is already cancelled."
-            );
+            throw new IllegalStateException("Reservation is already cancelled.");
         }
 
+        // Change the status to CANCELLED
         reservation.setStatus("CANCELLED");
 
         return repository.save(reservation);
     }
 }
+
+        }
