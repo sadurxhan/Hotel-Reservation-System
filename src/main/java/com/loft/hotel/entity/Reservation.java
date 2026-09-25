@@ -10,17 +10,19 @@ public class Reservation {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private String roomType;
+    private String status;
 
     public Reservation() {
     }
 
-    public Reservation(Long id, String guestName, String guestEmail, LocalDate checkInDate, LocalDate checkOutDate, String roomType) {
+    public Reservation(Long id, String guestName, String guestEmail, LocalDate checkInDate, LocalDate checkOutDate, String roomType, String status) {
         this.id = id;
         this.guestName = guestName;
         this.guestEmail = guestEmail;
         this.checkInDate = checkInDate;
         this.checkOutDate = checkOutDate;
         this.roomType = roomType;
+        this.status = status;
     }
 
     // Getters and Setters
@@ -70,5 +72,13 @@ public class Reservation {
 
     public void setRoomType(String roomType) {
         this.roomType = roomType;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
