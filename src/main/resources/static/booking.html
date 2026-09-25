@@ -1,0 +1,396 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hotel Reservation</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .booking-container {
+            width: 450px;
+            max-width: 100%;
+            margin: auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #availabilityMessage {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #resultMessage {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="booking-container">
+
+    <h1>Hotel Reservation</h1>
+
+    <!-- Guest first name -->
+    <label for="firstName">First Name</label>
+    <input
+            type="text"
+            id="firstName"
+            placeholder="Enter your first name"
+            required
+    >
+
+    <!-- Guest last name -->
+    <label for="lastName">Last Name</label>
+    <input
+            type="text"
+            id="lastName"
+            placeholder="Enter your last name"
+            required
+    >
+
+    <!-- Guest email -->
+    <label for="guestEmail">Guest Email</label>
+    <input
+            type="email"
+            id="guestEmail"
+            placeholder="Enter your email"
+            required
+    >
+
+    <!-- Guest phone number -->
+    <label for="guestPhone">Phone Number</label>
+    <input
+            type="tel"
+            id="guestPhone"
+            placeholder="Enter your phone number"
+            required
+    >
+
+    <!-- Check-in date -->
+    <label for="checkInDate">Check-in Date</label>
+    <input
+            type="date"
+            id="checkInDate"
+            required
+    >
+
+    <!-- Check-out date -->
+    <label for="checkOutDate">Check-out Date</label>
+    <input
+            type="date"
+            id="checkOutDate"
+            required
+    >
+
+    <!-- Room type -->
+    <label for="roomType">Room Type</label>
+    <select id="roomType" required>
+        <option value="">Select room type</option>
+        <option value="SINGLE">Single Room</option>
+        <option value="DOUBLE">Double Room</option>
+    </select>
+
+    <!-- Availability check -->
+    <button type="button" onclick="checkAvailability()">
+        Check Availability
+    </button>
+
+    <div id="availabilityMessage"></div>
+
+    <!-- Booking button -->
+    <button type="button" onclick="createReservation()">
+        Book Now
+    </button>
+
+    <!-- Success/error message -->
+    <div id="resultMessage"></div>
+
+</div>
+
+<script>
+
+    // Backend API address
+    const API_URL = "http://localhost:8081/api/reservations";
+
+
+    // Check whether the selected dates are available
+    async function checkAvailability() {
+
+        const checkIn =
+            document.getElementById("checkInDate").value;
+
+        const checkOut =
+            document.getElementById("checkOutDate").value;
+
+        const message =
+            document.getElementById("availabilityMessage");
+
+        // Make sure both dates are selected
+        if (!checkIn || !checkOut) {
+
+            message.textContent =
+                "Please select both dates.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+        // Check that check-out is after check-in
+        if (checkOut <= checkIn) {
+
+            message.textContent =
+                "Check-out date must be after check-in date.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+        try {
+
+            // Send request to the backend
+            const response = await fetch(
+                `${API_URL}/availability?checkIn=${checkIn}&checkOut=${checkOut}`
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Could not check availability."
+                );
+            }
+
+            const available =
+                await response.json();
+
+            // Show availability result
+            if (available) {
+
+                message.textContent =
+                    "Dates are available.";
+
+                message.style.color = "green";
+
+            } else {
+
+                message.textContent =
+                    "Those dates are already booked.";
+
+                message.style.color = "red";
+            }
+
+        } catch (error) {
+
+            message.textContent =
+                "Unable to check availability.";
+
+            message.style.color = "red";
+
+            console.error(error);
+        }
+    }
+
+
+    // Create a new reservation
+    async function createReservation() {
+
+        // Get first name
+        const firstName =
+            document.getElementById("firstName").value.trim();
+
+        // Get last name
+        const lastName =
+            document.getElementById("lastName").value.trim();
+
+        // Combine first name and last name
+        const guestName =
+            firstName + " " + lastName;
+
+        // Get email
+        const guestEmail =
+            document.getElementById("guestEmail").value.trim();
+
+        // Get phone number
+        const guestPhone =
+            document.getElementById("guestPhone").value.trim();
+
+        // Get check-in date
+        const checkIn =
+            document.getElementById("checkInDate").value;
+
+        // Get check-out date
+        const checkOut =
+            document.getElementById("checkOutDate").value;
+
+        // Get room type
+        const roomType =
+            document.getElementById("roomType").value;
+
+        // Get result message area
+        const resultMessage =
+            document.getElementById("resultMessage");
+
+        // Clear previous message
+        resultMessage.textContent = "";
+        resultMessage.className = "";
+
+        // Check required fields
+        if (!firstName ||
+            !lastName ||
+            !guestEmail ||
+            !guestPhone ||
+            !checkIn ||
+            !checkOut ||
+            !roomType) {
+
+            resultMessage.textContent =
+                "Please fill in all fields.";
+
+            resultMessage.className =
+                "error";
+
+            return;
+        }
+
+        // Check that check-out is after check-in
+        if (checkOut <= checkIn) {
+
+            resultMessage.textContent =
+                "Check-out date must be after check-in date.";
+
+            resultMessage.className =
+                "error";
+
+            return;
+        }
+
+        try {
+
+            // Send reservation data to Spring Boot
+            const response = await fetch(API_URL, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    guestName: guestName,
+                    guestEmail: guestEmail,
+                    guestPhone: guestPhone,
+                    checkInDate: checkIn,
+                    checkOutDate: checkOut,
+                    roomType: roomType
+
+                })
+            });
+
+            const data =
+                await response.json();
+
+            // Reservation created successfully
+            if (response.ok) {
+
+                resultMessage.textContent =
+                    "Booking successful! Reservation ID: " +
+                    data.id +
+                    ". Status: " +
+                    data.status;
+
+                resultMessage.className =
+                    "success";
+
+            } else {
+
+                // Backend returned an error
+                resultMessage.textContent =
+                    data;
+
+                resultMessage.className =
+                    "error";
+            }
+
+        } catch (error) {
+
+            // Connection/server error
+            resultMessage.textContent =
+                "Unable to connect to the hotel reservation server.";
+
+            resultMessage.className =
+                "error";
+
+            console.error(error);
+        }
+    }
+
+</script>
+
+</body>
+</html>
