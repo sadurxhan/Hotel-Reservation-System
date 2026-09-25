@@ -167,7 +167,7 @@ public class ReservationService {
         }
 
         // Change status to CANCELLED
-        reservation.setStatus("CANCELLED");
+        reservation.setStatus("CANCELLED");k
 
         // Save the updated reservation
         return repository.save(reservation);
