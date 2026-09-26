@@ -2,20 +2,29 @@ package com.loft.hotel.entity;
 
 import java.time.LocalDate;
 
+
+// An instance of this class moves through a lifecycle via its "status" field:
+//   PENDING   -> reservation created, waiting for payment
+//   CONFIRMED -> payment received, booking is final
+//   CANCELLED -> guest or system cancelled the booking; dates become free again
+// Stored in-memory by ReservationRepository (no database yet).
 public class Reservation {
 
-    private Long id;
+    private Long id;              // Unique ID, assigned automatically when saved (never set manually)
     private String guestName;
     private String guestEmail;
     private String guestPhone;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private String roomType;
-    private String status;
+    private String status;        // PENDING / CONFIRMED / CANCELLED - see comment above the class
 
+    // Empty constructor required by Spring so it can build this object
+    // from incoming JSON (the booking form data) before validation happens.
     public Reservation() {
     }
 
+    // Full constructor - mainly useful for tests or manually creating a reservation in code.
     public Reservation(Long id, String guestName, String guestEmail,
                        String guestPhone, LocalDate checkInDate,
                        LocalDate checkOutDate, String roomType,
@@ -31,16 +40,21 @@ public class Reservation {
         this.status = status;
     }
 
-    // Get ID
+    // --- Getters and setters ---
+    // Spring needs these to convert this object to/from JSON automatically.
+    // No custom logic belongs here - all validation and business rules live in ReservationService.
+
     public Long getId() {
         return id;
     }
 
+    // Only ReservationRepository should call this, right after generating a new ID.
+
+    // an existing reservation by guessing its ID.
     public void setId(Long id) {
         this.id = id;
     }
 
-    // Get guest name
     public String getGuestName() {
         return guestName;
     }
@@ -49,7 +63,6 @@ public class Reservation {
         this.guestName = guestName;
     }
 
-    // Get guest email
     public String getGuestEmail() {
         return guestEmail;
     }
@@ -58,7 +71,6 @@ public class Reservation {
         this.guestEmail = guestEmail;
     }
 
-    // Get guest phone
     public String getGuestPhone() {
         return guestPhone;
     }
@@ -67,7 +79,6 @@ public class Reservation {
         this.guestPhone = guestPhone;
     }
 
-    // Get check-in date
     public LocalDate getCheckInDate() {
         return checkInDate;
     }
@@ -76,7 +87,6 @@ public class Reservation {
         this.checkInDate = checkInDate;
     }
 
-    // Get check-out date
     public LocalDate getCheckOutDate() {
         return checkOutDate;
     }
@@ -85,7 +95,6 @@ public class Reservation {
         this.checkOutDate = checkOutDate;
     }
 
-    // Get room type
     public String getRoomType() {
         return roomType;
     }
@@ -94,10 +103,10 @@ public class Reservation {
         this.roomType = roomType;
     }
 
-    // Get reservation status
     public String getStatus() {
         return status;
     }
+
 
     public void setStatus(String status) {
         this.status = status;
