@@ -17,7 +17,7 @@ public class Reservation {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private String roomType;
-    private String status;        // PENDING / CONFIRMED / CANCELLED - see comment above the class
+    private ReservationStatus status;        // PENDING / CONFIRMED / CANCELLED - see comment above the class
 
     // Empty constructor required by Spring so it can build this object
     // from incoming JSON (the booking form data) before validation happens.
@@ -28,7 +28,7 @@ public class Reservation {
     public Reservation(Long id, String guestName, String guestEmail,
                        String guestPhone, LocalDate checkInDate,
                        LocalDate checkOutDate, String roomType,
-                       String status) {
+                       ReservationStatus status) {
 
         this.id = id;
         this.guestName = guestName;
@@ -103,12 +103,12 @@ public class Reservation {
         this.roomType = roomType;
     }
 
-    public String getStatus() {
+    public ReservationStatus getStatus() {
         return status;
     }
 
 
-    public void setStatus(String status) {
+    public void setStatus(ReservationStatus status) {
         this.status = status;
     }
 }
