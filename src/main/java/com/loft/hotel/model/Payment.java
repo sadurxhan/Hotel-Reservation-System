@@ -32,7 +32,7 @@ public class Payment {
     private PaymentMethod paymentMethod;
 
     public enum PaymentStatus{
-        Pending, Paid, Failed
+        PENDING, PAID, FAILED
     }
 
     @Enumerated(EnumType.STRING)
