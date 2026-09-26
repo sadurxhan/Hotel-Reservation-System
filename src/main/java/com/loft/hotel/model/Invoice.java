@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 @Table(name = "invoice")
 public class Invoice {
     @Id
-    @Column(name = "invoice_id", nullable = false)
+    @Column(name = "invoice_id", length = 40)
     private String invoiceId;
 
-    @Column(name = "payment_id", nullable = false, unique = true)
+    @Column(name = "payment_id", nullable = false, unique = true, length = 40)
     private String paymentId;
 
     @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)

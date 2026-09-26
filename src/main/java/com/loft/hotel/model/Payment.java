@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(name = "payment")
 public class Payment {
     @Id
-    @Column(name = "payment_id")
+    @Column(name = "payment_id", length = 40)
     private String paymentId;
 
     @Column(name = "reservation_id", nullable = false)
@@ -39,7 +39,7 @@ public class Payment {
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
-    @Column(name = "transaction_id", unique = true)
+    @Column(name = "transaction_id", unique = true, length = 40)
     private String transactionId;
 
     public Payment(){

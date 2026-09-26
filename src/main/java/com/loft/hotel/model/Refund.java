@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 @Table(name = "refund")
 public class Refund {
     @Id
-    @Column(name = "refund_id", unique = true, nullable = false)
+    @Column(name = "refund_id", length = 40)
     private String refundId;
 
-    @Column(name = "payment_id", nullable = false)
+    @Column(name = "payment_id", nullable = false, length = 40)
     private String paymentId;
 
     public enum RefundType{
@@ -32,7 +32,7 @@ public class Refund {
     @Column(name = "refund_status", nullable = false)
     private RefundStatus refundStatus;
 
-    @Column(name = "refund_reason", nullable = false)
+    @Column(name = "refund_reason", nullable = false, length = 300)
     private String refundReason;
 
     @CreationTimestamp
