@@ -1,6 +1,7 @@
 package com.loft.hotel.service;
 
 import com.loft.hotel.entity.Reservation;
+import com.loft.hotel.entity.ReservationStatus;
 import com.loft.hotel.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 
@@ -111,7 +112,7 @@ public class ReservationService {
         }
 
         // New reservations start with PENDING status
-        reservation.setStatus("PENDING");
+        reservation.setStatus(ReservationStatus.PENDING);
 
         // Save the reservation
         return repository.save(reservation);
@@ -140,14 +141,14 @@ public class ReservationService {
         Reservation reservation = getById(id);
 
         // Only PENDING reservations can be confirmed
-        if (!"PENDING".equals(reservation.getStatus())) {
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
 
             throw new IllegalStateException(
                     "Only PENDING reservations can be confirmed.");
         }
 
         // Change status to CONFIRMED
-        reservation.setStatus("CONFIRMED");
+        reservation.setStatus(ReservationStatus.CONFIRMED);
 
         // Save the updated reservation
         return repository.save(reservation);
@@ -160,14 +161,14 @@ public class ReservationService {
         Reservation reservation = getById(id);
 
         // Prevent cancelling an already cancelled reservation
-        if ("CANCELLED".equals(reservation.getStatus())) {
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
 
             throw new IllegalStateException(
                     "Reservation is already cancelled.");
         }
 
         // Change status to CANCELLED
-        reservation.setStatus("CANCELLED");
+        reservation.setStatus(ReservationStatus.CANCELLED);
 
         // Save the updated reservation
         return repository.save(reservation);
