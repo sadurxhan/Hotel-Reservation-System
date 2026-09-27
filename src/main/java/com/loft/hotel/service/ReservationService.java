@@ -1,176 +1,132 @@
 package com.loft.hotel.service;
 
-import com.loft.hotel.entity.Reservation;
-import com.loft.hotel.entity.ReservationStatus;
-import com.loft.hotel.repository.ReservationRepository;
+import com.loft.hotel.dto.BookingRequest;
+import com.loft.hotel.entity.*;
+import com.loft.hotel.repository.*;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
 public class ReservationService {
 
-    private final ReservationRepository repository;
+    private final ReservationRepository reservationRepository;
+    private final ReservationRoomSelectionRepository selectionRepository;
+    private final GuestRepository guestRepository;
+    private final RoomRepository roomRepository;
 
-    public ReservationService(ReservationRepository repository) {
-        this.repository = repository;
+    public ReservationService(ReservationRepository reservationRepository,
+                              ReservationRoomSelectionRepository selectionRepository,
+                              GuestRepository guestRepository,
+                              RoomRepository roomRepository) {
+        this.reservationRepository = reservationRepository;
+        this.selectionRepository = selectionRepository;
+        this.guestRepository = guestRepository;
+        this.roomRepository = roomRepository;
     }
 
-    // Check whether the requested dates are available
-    public boolean isAvailable(LocalDate checkIn, LocalDate checkOut) {
-
-        // Dates must not be empty
-        if (checkIn == null || checkOut == null) {
+    // True if the given room has no overlapping, non-cancelled reservation in that range.
+    public boolean isRoomAvailable(Integer roomId, LocalDate checkIn, LocalDate checkOut) {
+        if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
             return false;
         }
-
-        // Check-out date must be after check-in date
-        if (!checkOut.isAfter(checkIn)) {
-            return false;
-        }
-
-        // Return false if another reservation overlaps these dates
-        return !repository.hasOverlap(
-                new ReservationRepository.LocalDateRange(
-                        checkIn,
-                        checkOut
-                )
-        );
+        List<Reservation> overlaps = reservationRepository.findOverlappingForRoom(roomId, checkIn, checkOut);
+        return overlaps.isEmpty();
     }
 
-    // Create a new reservation
-    // The reservation starts with PENDING status
-    public synchronized Reservation createReservation(Reservation reservation) {
+    // Creates the Guest (or reuses an existing one by email), the Reservation,
+    // and the ReservationRoomSelection linking them to a specific room - all in one booking.
+    public synchronized Reservation createReservation(BookingRequest request) {
 
-        // Validate guest name
-        if (reservation.getGuestName() == null
-                || reservation.getGuestName().isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Guest name is required."
-            );
+        if (request.getGuestName() == null || request.getGuestName().isBlank()) {
+            throw new IllegalArgumentException("Guest name is required.");
+        }
+        if (request.getGuestEmail() == null || request.getGuestEmail().isBlank()) {
+            throw new IllegalArgumentException("Guest email is required.");
+        }
+        if (request.getRoomId() == null) {
+            throw new IllegalArgumentException("Please choose a room.");
+        }
+        if (request.getCheckInDate() == null || request.getCheckOutDate() == null) {
+            throw new IllegalArgumentException("Please choose both check-in and check-out dates.");
+        }
+        if (request.getCheckInDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Check-in date cannot be in the past.");
+        }
+        if (!request.getCheckOutDate().isAfter(request.getCheckInDate())) {
+            throw new IllegalArgumentException("Check-out date must be after check-in date.");
         }
 
-        // Validate guest email
-        if (reservation.getGuestEmail() == null
-                || reservation.getGuestEmail().isBlank()) {
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new IllegalArgumentException("That room does not exist."));
 
-            throw new IllegalArgumentException(
-                    "Guest email is required."
-            );
+        if (!isRoomAvailable(room.getRoomId(), request.getCheckInDate(), request.getCheckOutDate())) {
+            throw new IllegalArgumentException("Room " + room.getRoomNumber() + " is already booked for those dates.");
         }
 
-        // Validate guest phone number
-        if (reservation.getGuestPhone() == null
-                || reservation.getGuestPhone().isBlank()) {
+        // Reuse the guest record if this email already booked before, otherwise create one.
+        Guest guest = guestRepository.findByEmail(request.getGuestEmail())
+                .orElseGet(() -> {
+                    Guest g = new Guest();
+                    String[] parts = request.getGuestName().trim().split("\\s+", 2);
+                    g.setFname(parts[0]);
+                    g.setLname(parts.length > 1 ? parts[1] : "");
+                    g.setEmail(request.getGuestEmail());
+                    g.setPhoneNo(request.getGuestPhone());
+                    return guestRepository.save(g);
+                });
 
-            throw new IllegalArgumentException(
-                    "Guest phone number is required."
-            );
-        }
+        long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
+        BigDecimal pricePerNight = room.getTier().getBaseRate();
+        BigDecimal totalAmount = pricePerNight.multiply(BigDecimal.valueOf(nights));
 
-        // Validate room type
-        if (reservation.getRoomType() == null
-                || reservation.getRoomType().isBlank()) {
+        Reservation reservation = new Reservation();
+        reservation.setGuest(guest);
+        reservation.setCheckInDate(request.getCheckInDate());
+        reservation.setCheckOutDate(request.getCheckOutDate());
+        reservation.setNumberOfGuests(request.getNumberOfGuests() != null ? request.getNumberOfGuests() : 1);
+        reservation.setTotalAmount(totalAmount);
+        reservation.setReservationStatus(ReservationStatus.PENDING);
+        reservation = reservationRepository.save(reservation);
 
-            throw new IllegalArgumentException(
-                    "Room type is required.");
-        }
+        ReservationRoomSelection selection = new ReservationRoomSelection();
+        selection.setReservation(reservation);
+        selection.setRoom(room);
+        selection.setNoOfGuests(reservation.getNumberOfGuests());
+        selection.setRoomPricePerNight(pricePerNight);
+        selectionRepository.save(selection);
 
-        // Validate check-in and check-out dates
-        if (reservation.getCheckInDate() == null
-                || reservation.getCheckOutDate() == null) {
-
-            throw new IllegalArgumentException(
-                    "Please choose both check-in and check-out dates.");
-        }
-
-        // Check-in date cannot be in the past
-        if (reservation.getCheckInDate().isBefore(LocalDate.now())) {
-
-            throw new IllegalArgumentException(
-                    "Check-in date cannot be in the past.");
-        }
-
-        // Check-out date must be after check-in date
-        if (!reservation.getCheckOutDate()
-                .isAfter(reservation.getCheckInDate())) {
-
-            throw new IllegalArgumentException(
-                    "Check-out date must be after check-in date.");
-        }
-
-        // Check whether the selected dates are already booked
-        if (!isAvailable(
-                reservation.getCheckInDate(),
-                reservation.getCheckOutDate())) {
-
-            throw new IllegalArgumentException(
-                    "Those dates are already booked. Please choose different dates.");
-        }
-
-        // New reservations start with PENDING status
-        reservation.setStatus(ReservationStatus.PENDING);
-
-        // Save the reservation
-        return repository.save(reservation);
+        return reservation;
     }
 
-    // Get a reservation by its ID
-    public Reservation getById(Long id) {
-
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        new NoSuchElementException(
-                                "Reservation " + id + " not found"
-                        )
-                );
+    public Reservation getById(Integer id) {
+        return reservationRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Reservation " + id + " not found"));
     }
 
-    // Get all reservations
     public List<Reservation> getAll() {
-        return repository.findAll();
+        return reservationRepository.findAll();
     }
 
-    // Confirm a PENDING reservation
-    public Reservation confirm(Long id) {
-
-        // Find the reservation
-        Reservation reservation = getById(id);
-
-        // Only PENDING reservations can be confirmed
-        if (reservation.getStatus() != ReservationStatus.PENDING) {
-
-            throw new IllegalStateException(
-                    "Only PENDING reservations can be confirmed.");
+    public Reservation confirm(Integer id) {
+        Reservation r = getById(id);
+        if (r.getReservationStatus() != ReservationStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING reservations can be confirmed.");
         }
-
-        // Change status to CONFIRMED
-        reservation.setStatus(ReservationStatus.CONFIRMED);
-
-        // Save the updated reservation
-        return repository.save(reservation);
+        r.setReservationStatus(ReservationStatus.CONFIRMED);
+        return reservationRepository.save(r);
     }
 
-    // Cancel a reservation
-    public Reservation cancel(Long id) {
-
-        // Find the reservation
-        Reservation reservation = getById(id);
-
-        // Prevent cancelling an already cancelled reservation
-        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-
-            throw new IllegalStateException(
-                    "Reservation is already cancelled.");
+    public Reservation cancel(Integer id) {
+        Reservation r = getById(id);
+        if (r.getReservationStatus() == ReservationStatus.CANCELLED) {
+            throw new IllegalStateException("Reservation is already cancelled.");
         }
-
-        // Change status to CANCELLED
-        reservation.setStatus(ReservationStatus.CANCELLED);
-
-        // Save the updated reservation
-        return repository.save(reservation);
+        r.setReservationStatus(ReservationStatus.CANCELLED);
+        return reservationRepository.save(r);
     }
 }
