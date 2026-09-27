@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Welcome to The Loft by the Lake</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .booking-container {
+            width: 450px;
+            max-width: 100%;
+            margin: auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #availabilityMessage {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #resultMessage {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="booking-container">
+
+    <h1>Welcome to The Loft by the Lake</h1>
+
+    <label for="firstName">First Name</label>
+    <input type="text" id="firstName" placeholder="Enter your first name" required>
+
+    <label for="lastName">Last Name</label>
+    <input type="text" id="lastName" placeholder="Enter your last name" required>
+
+    <label for="guestEmail">Guest Email</label>
+    <input type="email" id="guestEmail" placeholder="Enter your email" required>
+
+    <label for="guestPhone">Phone Number</label>
+    <input type="tel" id="guestPhone" placeholder="Enter your phone number" required>
+
+    <label for="checkInDate">Check-in Date</label>
+    <input type="date" id="checkInDate" required>
+
+    <label for="checkOutDate">Check-out Date</label>
+    <input type="date" id="checkOutDate" required>
+
+    <label for="roomId">Select Room</label>
+
+    <select id="roomId" required>
+        <option value="">Select room</option>
+        <option value="1">Room 1</option>
+        <option value="2">Room 2</option>
+    </select>
+
+    <label for="numberOfGuests">Number of Guests</label>
+
+    <input
+            type="number"
+            id="numberOfGuests"
+            min="1"
+            value="1"
+            required
+    >
+
+    <button type="button" onclick="checkAvailability()">
+        Check Availability
+    </button>
+
+    <div id="availabilityMessage"></div>
+
+    <button type="button" onclick="createReservation()">
+        Book Now
+    </button>
+
+    <div id="resultMessage"></div>
+
+</div>
+
+<script>
+
+    const API_URL = "/api/reservations";
+
+
+    // Check room availability
+    async function checkAvailability() {
+
+        const roomId =
+            document.getElementById("roomId").value;
+
+        const checkIn =
+            document.getElementById("checkInDate").value;
+
+        const checkOut =
+            document.getElementById("checkOutDate").value;
+
+        const message =
+            document.getElementById("availabilityMessage");
+
+        message.textContent = "";
+        message.style.color = "";
+
+
+        if (!roomId) {
+
+            message.textContent =
+                "Please select a room.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+
+        if (!checkIn || !checkOut) {
+
+            message.textContent =
+                "Please select both dates.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+
+        if (checkOut <= checkIn) {
+
+            message.textContent =
+                "Check-out date must be after check-in date.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+
+        const url =
+            `${API_URL}/availability?roomId=${encodeURIComponent(roomId)}&checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`;
+
+
+        console.log(
+            "Checking availability:",
+            url
+        );
+
+
+        try {
+
+            const response =
+                await fetch(url);
+
+
+            const responseText =
+                await response.text();
+
+
+            console.log(
+                "Availability status:",
+                response.status
+            );
+
+            console.log(
+                "Availability response:",
+                responseText
+            );
+
+
+            if (!response.ok) {
+
+                message.textContent =
+                    responseText ||
+                    "Unable to check availability.";
+
+                message.style.color =
+                    "red";
+
+                return;
+            }
+
+
+            const available =
+                responseText.trim() === "true";
+
+
+            if (available) {
+
+                message.textContent =
+                    "Room is available for these dates.";
+
+                message.style.color =
+                    "green";
+
+            } else {
+
+                message.textContent =
+                    "This room is already booked for these dates.";
+
+                message.style.color =
+                    "red";
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Availability error:",
+                error
+            );
+
+
+            message.textContent =
+                "Unable to connect to the reservation server.";
+
+            message.style.color =
+                "red";
+        }
+    }
+
+
+    // Create booking
+    async function createReservation() {
+
+        const firstName =
+            document.getElementById("firstName")
+                .value.trim();
+
+        const lastName =
+            document.getElementById("lastName")
+                .value.trim();
+
+        const guestEmail =
+            document.getElementById("guestEmail")
+                .value.trim();
+
+        const guestPhone =
+            document.getElementById("guestPhone")
+                .value.trim();
+
+        const checkIn =
+            document.getElementById("checkInDate")
+                .value;
+
+        const checkOut =
+            document.getElementById("checkOutDate")
+                .value;
+
+        const roomId =
+            document.getElementById("roomId")
+                .value;
+
+        const numberOfGuests =
+            document.getElementById("numberOfGuests")
+                .value;
+
+        const resultMessage =
+            document.getElementById("resultMessage");
+
+
+        resultMessage.textContent = "";
+        resultMessage.className = "";
+
+
+        if (
+            !firstName ||
+            !lastName ||
+            !guestEmail ||
+            !guestPhone ||
+            !checkIn ||
+            !checkOut ||
+            !roomId ||
+            !numberOfGuests
+        ) {
+
+            resultMessage.textContent =
+                "Please fill in all fields.";
+
+            resultMessage.className =
+                "error";
+
+            return;
+        }
+
+
+        if (checkOut <= checkIn) {
+
+            resultMessage.textContent =
+                "Check-out date must be after check-in date.";
+
+            resultMessage.className =
+                "error";
+
+            return;
+        }
+
+
+        if (parseInt(numberOfGuests) < 1) {
+
+            resultMessage.textContent =
+                "Number of guests must be at least 1.";
+
+            resultMessage.className =
+                "error";
+
+            return;
+        }
+
+
+        const guestName =
+            firstName + " " + lastName;
+
+
+        const bookingData = {
+
+            guestName: guestName,
+
+            guestEmail: guestEmail,
+
+            guestPhone: guestPhone,
+
+            checkInDate: checkIn,
+
+            checkOutDate: checkOut,
+
+            roomId: parseInt(roomId),
+
+            numberOfGuests:
+                parseInt(numberOfGuests)
+        };
+
+
+        console.log(
+            "Sending booking:",
+            bookingData
+        );
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(
+                                bookingData
+                            )
+                    }
+                );
+
+
+            const contentType =
+                response.headers.get(
+                    "content-type"
+                );
+
+
+            let data;
+
+
+            if (
+                contentType &&
+                contentType.includes(
+                    "application/json"
+                )
+            ) {
+
+                data =
+                    await response.json();
+
+            } else {
+
+                data =
+                    await response.text();
+            }
+
+
+            console.log(
+                "Server response:",
+                data
+            );
+
+
+            if (response.ok) {
+
+                resultMessage.textContent =
+                    "Booking successful! " +
+                    "Reservation ID: " +
+                    data.reservationId +
+                    " | Status: " +
+                    data.reservationStatus;
+
+                resultMessage.className =
+                    "success";
+
+
+                document.getElementById(
+                    "availabilityMessage"
+                ).textContent = "";
+
+
+            } else {
+
+                resultMessage.textContent =
+                    typeof data === "string"
+                        ? data
+                        : "Booking failed.";
+
+                resultMessage.className =
+                    "error";
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Booking error:",
+                error
+            );
+
+
+            resultMessage.textContent =
+                "Unable to connect to the hotel reservation server.";
+
+            resultMessage.className =
+                "error";
+        }
+    }
+
+</script>
+
+</body>
+</html>

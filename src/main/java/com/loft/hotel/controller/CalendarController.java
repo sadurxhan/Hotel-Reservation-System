@@ -1,6 +1,6 @@
 package com.loft.hotel.controller;
 
-import com.loft.hotel.model.CalendarBlock;
+import com.loft.hotel.entity.CalendarBlock;
 import com.loft.hotel.service.CalendarService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;

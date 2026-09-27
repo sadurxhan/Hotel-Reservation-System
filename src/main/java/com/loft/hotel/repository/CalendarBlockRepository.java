@@ -1,6 +1,6 @@
 package com.loft.hotel.repository;
 
-import com.loft.hotel.model.CalendarBlock;
+import com.loft.hotel.entity.CalendarBlock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,15 +12,18 @@ import java.util.List;
 @Repository
 public interface CalendarBlockRepository extends JpaRepository<CalendarBlock, Integer> {
 
-    // Fetch all blocks between check-in and check-out for a specific room or entire property (room IS NULL)
-    @Query("SELECT cb FROM CalendarBlock cb WHERE cb.blockedDate >= :startDate AND cb.blockedDate < :endDate " +
-            "AND (cb.room.roomId = :roomId OR cb.room IS NULL)")
-    List<CalendarBlock> findBlocksInRangeForRoom(@Param("startDate") LocalDate startDate,
-                                                 @Param("endDate") LocalDate endDate,
-                                                 @Param("roomId") Integer roomId);
+    // Checks for blocked dates in a given range for a specific room
+    @Query("SELECT cb FROM CalendarBlock cb WHERE cb.room.roomId = :roomId " +
+            "AND cb.blockedDate BETWEEN :startDate AND :endDate")
+    List<CalendarBlock> findBlocksInRangeForRoom(@Param("roomId") Integer roomId,
+                                                 @Param("startDate") LocalDate startDate,
+                                                 @Param("endDate") LocalDate endDate);
 
-    // Fetch all blocks between two dates (used by admin calendar dashboard view)
+    //Retrieves all calendar blocks across all rooms within a date window.
     List<CalendarBlock> findByBlockedDateBetween(LocalDate startDate, LocalDate endDate);
+
+    // Retrieves calendar blocks for a single room on a specific date. (Used when reservation cancelled release the block date)
+    List<CalendarBlock> findByRoom_RoomIdAndBlockedDate(Integer roomId, LocalDate blockedDate);
 
     // Check if an external iCal event has already been imported to prevent duplicates
     boolean existsByExternalUid(String externalUid);

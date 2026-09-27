@@ -1,6 +1,6 @@
 package com.loft.hotel.repository;
 
-import com.loft.hotel.model.RateOverride;
+import com.loft.hotel.entity.RateOverride;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,7 +18,7 @@ public interface RateOverrideRepository extends JpaRepository<RateOverride, Inte
             "AND (ro.room.roomId = :roomId OR ro.room IS NULL)")
     List<RateOverride> findActiveOverridesInRange(@Param("startDate") LocalDate startDate,
                                                   @Param("endDate") LocalDate endDate,
-                                                  @Param("roomId") Long roomId);
+                                                  @Param("roomId") Integer roomId);
 
     // List all active packages (for admin view / promotions page)
     List<RateOverride> findByIsActiveTrue();

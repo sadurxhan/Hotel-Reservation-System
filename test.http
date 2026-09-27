@@ -1,0 +1,2 @@
+### Cancel reservation
+PUT http://localhost:8081/api/reservations/1/cancel

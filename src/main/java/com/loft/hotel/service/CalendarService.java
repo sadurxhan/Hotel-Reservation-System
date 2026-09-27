@@ -1,6 +1,6 @@
 package com.loft.hotel.service;
 
-import com.loft.hotel.model.CalendarBlock;
+import com.loft.hotel.entity.CalendarBlock;
 import com.loft.hotel.repository.CalendarBlockRepository;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +21,12 @@ public class CalendarService {
      * Checks if a room (or the full villa) is available for a requested date range.
      * Returns true if no calendar blocks overlap with the stay.
      */
-    public boolean isRoomAvailable(Integer roomId, LocalDate checkIn, LocalDate checkOut) {
-        if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
+    public boolean isRoomAvailable(Integer roomId, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
             throw new IllegalArgumentException("Invalid date range: check-out must be after check-in.");
         }
 
-        List<CalendarBlock> blocks = calendarBlockRepository.findBlocksInRangeForRoom(checkIn, checkOut, roomId);
+        List<CalendarBlock> blocks = calendarBlockRepository.findBlocksInRangeForRoom(roomId, startDate, endDate);
         return blocks.isEmpty();
     }
 
