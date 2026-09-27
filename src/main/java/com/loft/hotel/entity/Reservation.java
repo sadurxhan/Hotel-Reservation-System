@@ -1,114 +1,90 @@
 package com.loft.hotel.entity;
 
+import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
-// An instance of this class moves through a lifecycle via its "status" field:
-//   PENDING   -> reservation created, waiting for payment
-//   CONFIRMED -> payment received, booking is final
-//   CANCELLED -> guest or system cancelled the booking; dates become free again
-// Stored in-memory by ReservationRepository (no database yet).
+// Guest details now live in the Guest entity, referenced here by guest_id.
+// The actual rooms booked live in ReservationRoomSelection, since one
+// reservation can cover more than one room.
+@Entity
+@Table(name = "reservation")
 public class Reservation {
 
-    private Long id;              // Unique ID, assigned automatically when saved (never set manually)
-    private String guestName;
-    private String guestEmail;
-    private String guestPhone;
-    private LocalDate checkInDate;
-    private LocalDate checkOutDate;
-    private String roomType;
-    private ReservationStatus status;        // PENDING / CONFIRMED / CANCELLED - see comment above the class
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "reservation_id")
+    private Integer reservationId;
 
-    // Empty constructor required by Spring so it can build this object
-    // from incoming JSON (the booking form data) before validation happens.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guest_id", nullable = false, foreignKey = @ForeignKey(name = "fk_reservation_guest"))
+    private Guest guest;
+
+    @Column(name = "check_in_date", nullable = false)
+    private LocalDate checkInDate;
+
+    @Column(name = "check_out_date", nullable = false)
+    private LocalDate checkOutDate;
+
+    @Column(name = "booking_date")
+    private LocalDateTime bookingDate = LocalDateTime.now();
+
+    @Column(name = "number_of_guests", nullable = false)
+    private Integer numberOfGuests;
+
+    @Column(name = "total_amount", nullable = false)
+    private BigDecimal totalAmount;
+
+    // Stored as text in the database ("PENDING", "CONFIRMED", "CANCELLED"),
+    // but handled as the ReservationStatus enum everywhere in the code.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reservation_status")
+    private ReservationStatus reservationStatus = ReservationStatus.PENDING;
+
     public Reservation() {
     }
 
-    // Full constructor - mainly useful for tests or manually creating a reservation in code.
-    public Reservation(Long id, String guestName, String guestEmail,
-                       String guestPhone, LocalDate checkInDate,
-                       LocalDate checkOutDate, String roomType,
-                       ReservationStatus status) {
+    public Integer getReservationId() {
+        return reservationId; }
+    public void setReservationId(Integer reservationId) {
+        this.reservationId = reservationId; }
 
-        this.id = id;
-        this.guestName = guestName;
-        this.guestEmail = guestEmail;
-        this.guestPhone = guestPhone;
-        this.checkInDate = checkInDate;
-        this.checkOutDate = checkOutDate;
-        this.roomType = roomType;
-        this.status = status;
-    }
-
-    // --- Getters and setters ---
-    // Spring needs these to convert this object to/from JSON automatically.
-    // No custom logic belongs here - all validation and business rules live in ReservationService.
-
-    public Long getId() {
-        return id;
-    }
-
-    // Only ReservationRepository should call this, right after generating a new ID.
-
-    // an existing reservation by guessing its ID.
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getGuestName() {
-        return guestName;
-    }
-
-    public void setGuestName(String guestName) {
-        this.guestName = guestName;
-    }
-
-    public String getGuestEmail() {
-        return guestEmail;
-    }
-
-    public void setGuestEmail(String guestEmail) {
-        this.guestEmail = guestEmail;
-    }
-
-    public String getGuestPhone() {
-        return guestPhone;
-    }
-
-    public void setGuestPhone(String guestPhone) {
-        this.guestPhone = guestPhone;
-    }
+    public Guest getGuest() {
+        return guest; }
+    public void setGuest(Guest guest) {
+        this.guest = guest; }
 
     public LocalDate getCheckInDate() {
-        return checkInDate;
-    }
-
+        return checkInDate; }
     public void setCheckInDate(LocalDate checkInDate) {
-        this.checkInDate = checkInDate;
-    }
+        this.checkInDate = checkInDate; }
 
     public LocalDate getCheckOutDate() {
-        return checkOutDate;
-    }
-
+        return checkOutDate; }
     public void setCheckOutDate(LocalDate checkOutDate) {
-        this.checkOutDate = checkOutDate;
-    }
+        this.checkOutDate = checkOutDate; }
 
-    public String getRoomType() {
-        return roomType;
-    }
+    public LocalDateTime getBookingDate() {
+        return bookingDate; }
+    public void setBookingDate(LocalDateTime bookingDate) {
+        this.bookingDate = bookingDate; }
 
-    public void setRoomType(String roomType) {
-        this.roomType = roomType;
-    }
+    public Integer getNumberOfGuests() {
+        return numberOfGuests; }
+    public void setNumberOfGuests(Integer numberOfGuests) {
+        this.numberOfGuests = numberOfGuests; }
 
-    public ReservationStatus getStatus() {
-        return status;
-    }
+    public BigDecimal getTotalAmount() {
+        return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount; }
 
-
-    public void setStatus(ReservationStatus status) {
-        this.status = status;
-    }
+    public ReservationStatus getReservationStatus() {
+        return reservationStatus; }
+    // Note: no legality checking here (e.g. this would allow CANCELLED -> PENDING).
+    // That rule-checking belongs in ReservationService.confirm() / .cancel(), not here.
+    public void setReservationStatus(ReservationStatus reservationStatus) {
+        this.reservationStatus = reservationStatus; }
 }
