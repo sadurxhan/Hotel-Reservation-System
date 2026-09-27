@@ -1,69 +1,87 @@
 package com.loft.hotel.service;
-// Services live in their own "service" package — this is where the
-// actual decision-making/logic happens, separate from data storage.
 
 import com.loft.hotel.model.Inquiry;
 import com.loft.hotel.repository.InquiryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-// This annotation tells Spring "this class contains business logic —
-// manage it for me, and let other classes (like controllers) use it."
 public class InquiryService {
 
     private final InquiryRepository inquiryRepository;
-    // We store a reference to the repository here so this class can
-    // actually reach the database through it.
+    private final JdbcTemplate jdbcTemplate;
+    // JdbcTemplate lets us run raw SQL directly, without needing a
+    // Guest.java entity class — just what we need for this workaround.
 
     @Autowired
-    // This tells Spring: "automatically hand me a working InquiryRepository
-    // when this class is created — I don't want to build it myself."
-    public InquiryService(InquiryRepository inquiryRepository) {
+    public InquiryService(InquiryRepository inquiryRepository, JdbcTemplate jdbcTemplate) {
         this.inquiryRepository = inquiryRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    public Inquiry submitInquiry(Integer guestId, String subject, String message) {
-        // This method will be called when a guest submits the contact form.
-        // TODO: once Guest.java exists, replace guestId param with
-        // name/email and look up-or-create the Guest here instead.
+    private Integer findOrCreateGuest(String fname, String lname, String email, String phoneNo) {
+        // Step 1: check if a guest with this email already exists.
+        List<Integer> existing = jdbcTemplate.queryForList(
+                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
+        );
+
+        if (!existing.isEmpty()) {
+            return existing.get(0);
+            // Guest already exists — reuse their ID, don't create a duplicate.
+        }
+
+        // Step 2: no match found — insert a new guest row.
+        java.sql.PreparedStatement[] ps = new java.sql.PreparedStatement[1];
+        jdbcTemplate.update(connection -> {
+            ps[0] = connection.prepareStatement(
+                    "INSERT INTO guest (fname, lname, email, phone_no) VALUES (?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+            ps[0].setString(1, fname);
+            ps[0].setString(2, lname);
+            ps[0].setString(3, email);
+            ps[0].setString(4, phoneNo);
+            return ps[0];
+        });
+
+        // Grab the auto-generated ID of the guest we just inserted.
+        return jdbcTemplate.queryForObject(
+                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
+        );
+    }
+
+    public Inquiry submitInquiry(String fullName, String email, String phoneNo,
+                                 String subject, String message) {
+        // Split "Full Name" into first/last for the guest table's two columns.
+        String[] nameParts = fullName.trim().split(" ", 2);
+        String fname = nameParts[0];
+        String lname = nameParts.length > 1 ? nameParts[1] : "";
+
+        Integer guestId = findOrCreateGuest(fname, lname, email, phoneNo);
 
         Inquiry inquiry = new Inquiry();
-        // Create a blank Inquiry object in memory (nothing saved yet).
-
         inquiry.setGuestId(guestId);
         inquiry.setInquirySubject(subject);
         inquiry.setMessage(message);
         inquiry.setInquiryDate(LocalDateTime.now());
-        // .now() grabs the current date/time automatically.
         inquiry.setInquiryStatus("PENDING");
-        // Every new inquiry starts as PENDING until the owner reads it.
 
         return inquiryRepository.save(inquiry);
-        // .save() is one of those free methods JpaRepository gave us —
-        // this is the line that actually writes the row into MySQL.
     }
 
     public List<Inquiry> getAllInquiries() {
-        // This will be used by the owner/admin side to see every inquiry.
         return inquiryRepository.findAll();
-        // findAll() is also free from JpaRepository — grabs every row.
     }
 
     public Inquiry updateStatus(Integer inquiryId, String newStatus) {
-        // Lets the admin mark an inquiry as RESOLVED, etc.
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new RuntimeException("Inquiry not found"));
-        // findById returns something called an "Optional" — a safe box that
-        // might be empty. .orElseThrow() says "if it's empty, crash with
-        // this error message" instead of silently giving us nothing.
-
         inquiry.setInquiryStatus(newStatus);
         return inquiryRepository.save(inquiry);
-        // Calling .save() on an object that already has an ID updates
-        // the existing row instead of creating a new one.
     }
 }
