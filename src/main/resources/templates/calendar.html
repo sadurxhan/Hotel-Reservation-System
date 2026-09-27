@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Availability Calendar - Loft by the Lake</title>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --accent: #2b6cb0;
+            --blocked: #fee2e2;
+            --blocked-text: #991b1b;
+            --available: #ecfdf5;
+            --available-hover: #d1fae5;
+            --selected: #2563eb;
+            --surface: #ffffff;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: #334155;
+            margin: 0;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .calendar-container {
+            background: var(--surface);
+            max-width: 720px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.4rem;
+        }
+
+        .nav-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .nav-btn:hover {
+            background: var(--border);
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-badge {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+
+        .badge-available { background: var(--available); border: 1px solid #a7f3d0; }
+        .badge-blocked { background: var(--blocked); border: 1px solid #fecaca; }
+        .badge-selected { background: var(--selected); }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+
+        .weekday {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #64748b;
+            padding-bottom: 8px;
+        }
+
+        .day-cell {
+            padding: 12px 0;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .day-available {
+            background: var(--available);
+            color: #065f46;
+            border-color: #d1fae5;
+        }
+
+        .day-available:hover {
+            background: var(--available-hover);
+        }
+
+        .day-blocked {
+            background: var(--blocked);
+            color: var(--blocked-text);
+            cursor: not-allowed;
+            text-decoration: line-through;
+            border-color: #fecaca;
+        }
+
+        .day-empty {
+            cursor: default;
+        }
+
+        .day-selected {
+            background: var(--selected) !important;
+            color: #ffffff !important;
+            font-weight: 700;
+        }
+
+        .selection-panel {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .dates-summary {
+            font-size: 0.95rem;
+        }
+
+        .dates-summary strong {
+            color: var(--primary);
+        }
+
+        .btn-check {
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-check:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calendar-container">
+    <div class="header">
+        <button class="nav-btn" id="prevMonthBtn">&larr; Prev</button>
+        <h2 id="currentMonthYear"></h2>
+        <button class="nav-btn" id="nextMonthBtn">Next &rarr;</button>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-badge badge-available"></div> Available</div>
+        <div class="legend-item"><div class="legend-badge badge-blocked"></div> Blocked / Booked</div>
+        <div class="legend-item"><div class="legend-badge badge-selected"></div> Selected Stay</div>
+    </div>
+
+    <div class="calendar-grid" id="calendarGrid">
+        <div class="weekday">Sun</div>
+        <div class="weekday">Mon</div>
+        <div class="weekday">Tue</div>
+        <div class="weekday">Wed</div>
+        <div class="weekday">Thu</div>
+        <div class="weekday">Fri</div>
+        <div class="weekday">Sat</div>
+    </div>
+
+    <div class="selection-panel">
+        <div class="dates-summary">
+            Check-in: <strong id="selectedCheckIn">None</strong> &nbsp;|&nbsp;
+            Check-out: <strong id="selectedCheckOut">None</strong>
+        </div>
+        <button class="btn-check" id="btnVerify" disabled>Verify Availability</button>
+        <div class="status-box" id="statusBox"></div>
+    </div>
+</div>
+
+<script>
+    let currentDate = new Date();
+    let blockedDates = new Set();
+    let checkInDate = null;
+    let checkOutDate = null;
+
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"];
+
+    async function fetchBlockedDates(year, month) {
+        // Fetch blocks from the first day to the last day of the visible month
+        const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const lastDayObj = new Date(year, month + 1, 0);
+        const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayObj.getDate()).padStart(2, '0')}`;
+
+        try {
+            const res = await fetch(`/api/calendar/blocks?startDate=${firstDay}&endDate=${lastDay}`);
+            if (res.ok) {
+                const data = await res.json();
+                blockedDates = new Set(data.map(item => item.blockedDate));
+            }
+        } catch (err) {
+            console.error("Failed to load blocks:", err);
+            blockedDates = new Set();
+        }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById("currentMonthYear").innerText = `${monthNames[month]} ${year}`;
+
+        const grid = document.getElementById("calendarGrid");
+        while (grid.children.length > 7) {
+            grid.removeChild(grid.lastChild);
+        }
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        // Empty cells for alignment
+        for (let i = 0; i < firstDayIndex; i++) {
+            const emptyCell = document.createElement("div");
+            emptyCell.className = "day-cell day-empty";
+            grid.appendChild(emptyCell);
+        }
+
+        // Days of month
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const cell = document.createElement("div");
+            cell.className = "day-cell";
+            cell.innerText = day;
+
+            const isBlocked = blockedDates.has(dateStr);
+
+            if (isBlocked) {
+                cell.classList.add("day-blocked");
+            } else {
+                cell.classList.add("day-available");
+                cell.onclick = () => handleDateClick(dateStr);
+            }
+
+            if (dateStr === checkInDate || dateStr === checkOutDate) {
+                cell.classList.add("day-selected");
+            } else if (checkInDate && checkOutDate && dateStr > checkInDate && dateStr < checkOutDate) {
+                cell.classList.add("day-selected");
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+
+    function handleDateClick(dateStr) {
+        const statusBox = document.getElementById("statusBox");
+        statusBox.style.display = "none";
+
+        if (!checkInDate || (checkInDate && checkOutDate)) {
+            checkInDate = dateStr;
+            checkOutDate = null;
+        } else if (checkInDate && !checkOutDate) {
+            if (dateStr > checkInDate) {
+                checkOutDate = dateStr;
+            } else {
+                checkInDate = dateStr;
+            }
+        }
+
+        document.getElementById("selectedCheckIn").innerText = checkInDate || "None";
+        document.getElementById("selectedCheckOut").innerText = checkOutDate || "None";
+        document.getElementById("btnVerify").disabled = !(checkInDate && checkOutDate);
+
+        renderCalendar();
+    }
+
+    document.getElementById("prevMonthBtn").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        fetchBlockedDates(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    document.getElementById("nextMonthBtn").addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        fetchBlockedDates(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    document.getElementById("btnVerify").addEventListener("click", async () => {
+        const statusBox = document.getElementById("statusBox");
+        try {
+            const res = await fetch(`/api/calendar/check-availability?checkIn=${checkInDate}&checkOut=${checkOutDate}`);
+            const data = await res.json();
+
+            statusBox.style.display = "block";
+            if (data.available) {
+                statusBox.className = "status-box status-success";
+                statusBox.innerText = `Dates ${data.checkIn} to ${data.checkOut} are fully available to book!`;
+            } else {
+                statusBox.className = "status-box status-error";
+                statusBox.innerText = `Sorry, one or more selected dates in this range are already blocked.`;
+            }
+        } catch (e) {
+            statusBox.style.display = "block";
+            statusBox.className = "status-box status-error";
+            statusBox.innerText = "Error verifying availability with backend.";
+        }
+    });
+
+    // Initial load
+    fetchBlockedDates(currentDate.getFullYear(), currentDate.getMonth());
+</script>
+
+</body>
+</html>

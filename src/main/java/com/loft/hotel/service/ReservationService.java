@@ -4,6 +4,7 @@ import com.loft.hotel.dto.BookingRequest;
 import com.loft.hotel.entity.*;
 import com.loft.hotel.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,28 +19,38 @@ public class ReservationService {
     private final ReservationRoomSelectionRepository selectionRepository;
     private final GuestRepository guestRepository;
     private final RoomRepository roomRepository;
+    private final CalendarBlockRepository calendarBlockRepository;
 
     public ReservationService(ReservationRepository reservationRepository,
                               ReservationRoomSelectionRepository selectionRepository,
                               GuestRepository guestRepository,
-                              RoomRepository roomRepository) {
+                              RoomRepository roomRepository,
+                              CalendarBlockRepository calendarBlockRepository) {
         this.reservationRepository = reservationRepository;
         this.selectionRepository = selectionRepository;
         this.guestRepository = guestRepository;
         this.roomRepository = roomRepository;
+        this.calendarBlockRepository = calendarBlockRepository;
     }
 
-    // True if the given room has no overlapping, non-cancelled reservation in that range.
     public boolean isRoomAvailable(Integer roomId, LocalDate checkIn, LocalDate checkOut) {
         if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)) {
             return false;
         }
+
+        // Check reservation overlaps
         List<Reservation> overlaps = reservationRepository.findOverlappingForRoom(roomId, checkIn, checkOut);
-        return overlaps.isEmpty();
+        if (!overlaps.isEmpty()) {
+            return false;
+        }
+
+        // Check calendar blocks (both admin blocks and manual blocks)
+        LocalDate dayBeforeCheckOut = checkOut.minusDays(1);
+        List<CalendarBlock> blocks = calendarBlockRepository.findBlocksInRangeForRoom(roomId, checkIn, dayBeforeCheckOut);
+        return blocks.isEmpty();
     }
 
-    // Creates the Guest (or reuses an existing one by email), the Reservation,
-    // and the ReservationRoomSelection linking them to a specific room - all in one booking.
+    @Transactional
     public synchronized Reservation createReservation(BookingRequest request) {
 
         if (request.getGuestName() == null || request.getGuestName().isBlank()) {
@@ -65,10 +76,9 @@ public class ReservationService {
                 .orElseThrow(() -> new IllegalArgumentException("That room does not exist."));
 
         if (!isRoomAvailable(room.getRoomId(), request.getCheckInDate(), request.getCheckOutDate())) {
-            throw new IllegalArgumentException("Room " + room.getRoomNumber() + " is already booked for those dates.");
+            throw new IllegalArgumentException("Room " + room.getRoomNumber() + " is already blocked or booked for those dates.");
         }
 
-        // Reuse the guest record if this email already booked before, otherwise create one.
         Guest guest = guestRepository.findByEmail(request.getGuestEmail())
                 .orElseGet(() -> {
                     Guest g = new Guest();
@@ -100,6 +110,17 @@ public class ReservationService {
         selection.setRoomPricePerNight(pricePerNight);
         selectionRepository.save(selection);
 
+        // Block dates in calendar
+        LocalDate currentDate = request.getCheckInDate();
+        while (currentDate.isBefore(request.getCheckOutDate())) {
+            CalendarBlock block = new CalendarBlock();
+            block.setRoom(room);
+            block.setBlockedDate(currentDate);
+            block.setSource("INTERNAL_BOOKING");
+            calendarBlockRepository.save(block);
+            currentDate = currentDate.plusDays(1);
+        }
+
         return reservation;
     }
 
@@ -121,12 +142,28 @@ public class ReservationService {
         return reservationRepository.save(r);
     }
 
+    @Transactional
     public Reservation cancel(Integer id) {
         Reservation r = getById(id);
         if (r.getReservationStatus() == ReservationStatus.CANCELLED) {
             throw new IllegalStateException("Reservation is already cancelled.");
         }
         r.setReservationStatus(ReservationStatus.CANCELLED);
+
+        // Clear calendar blocks created for this room during those dates
+        List<ReservationRoomSelection> selections = selectionRepository.findAll();
+        for (ReservationRoomSelection sel : selections) {
+            if (sel.getReservation().getReservationId().equals(r.getReservationId())) {
+                Integer roomId = sel.getRoom().getRoomId();
+                LocalDate date = r.getCheckInDate();
+                while (date.isBefore(r.getCheckOutDate())) {
+                    List<CalendarBlock> blocks = calendarBlockRepository.findByRoom_RoomIdAndBlockedDate(roomId, date);
+                    calendarBlockRepository.deleteAll(blocks);
+                    date = date.plusDays(1);
+                }
+            }
+        }
+
         return reservationRepository.save(r);
     }
 }
