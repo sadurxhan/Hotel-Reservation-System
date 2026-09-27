@@ -39,7 +39,7 @@ public class Refund {
     @Column(name = "refund_datetime", nullable = false)
     private LocalDateTime refundDateTime;
 
-    @Column(name = "refund_amount", nullable = false)
+    @Column(name = "refund_amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal refundAmount;
 
     // No-argument constructor
