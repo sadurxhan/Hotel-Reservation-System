@@ -29,7 +29,7 @@ public class Invoice {
 
     @CreationTimestamp
     @Column(name = "issued_datetime", nullable = false)
-    private LocalDateTime issuedDate;
+    private LocalDateTime issuedDateTime;
 
     // No-argument constructor
     public Invoice(){
