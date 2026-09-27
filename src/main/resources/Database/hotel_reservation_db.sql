@@ -178,6 +178,11 @@ CREATE TABLE activity (
     is_active BOOLEAN DEFAULT TRUE
 );
 
+SHOW TABLES;
+
 -- Performance indexes for search and availability
 CREATE INDEX idx_calendar_block_date ON calendar_block(blocked_date);
 CREATE INDEX idx_rate_override_dates ON rate_override(start_date, end_date);
+
+Select * from calendar_block;
+INSERT INTO calendar_block (blocked_date, source) VALUES ('2026-12-24', 'MANUAL_ADMIN');
