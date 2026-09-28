@@ -1,6 +1,6 @@
 package com.loft.hotel.repository;
 
-import com.loft.hotel.model.Invoice;
+import com.loft.hotel.entity.Invoice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

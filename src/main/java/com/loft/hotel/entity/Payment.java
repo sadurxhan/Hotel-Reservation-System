@@ -1,7 +1,6 @@
-package com.loft.hotel.model;
+package com.loft.hotel.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,12 +13,11 @@ public class Payment {
     private String paymentId;
 
     @Column(name = "reservation_id", nullable = false)
-    private int reservationId;
+    private Integer reservationId;
 
     @Column(name = "amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal amount;
 
-    @CreationTimestamp
     @Column(name = "payment_datetime", nullable = false)
     private LocalDateTime paymentDateTime;
 
@@ -57,8 +55,8 @@ public class Payment {
     public void setPaymentId(String paymentId){ this.paymentId = paymentId; }
     public String getPaymentId(){ return paymentId; }
 
-    public void setReservationId(int reservationId){ this.reservationId = reservationId; }
-    public int getReservationId(){ return reservationId; }
+    public void setReservationId(Integer reservationId){ this.reservationId = reservationId; }
+    public Integer getReservationId(){ return reservationId; }
 
     public void setAmount(BigDecimal amount){ this.amount = amount; }
     public BigDecimal getAmount(){ return amount; }
@@ -71,4 +69,7 @@ public class Payment {
 
     public void setTransactionId(String transactionId){ this.transactionId = transactionId; }
     public String getTransactionId(){ return transactionId; }
+
+    public void setPaymentDateTime(LocalDateTime paymentDateTime){ this.paymentDateTime = paymentDateTime; }
+    public LocalDateTime getPaymentDateTime(){ return paymentDateTime; }
 }
