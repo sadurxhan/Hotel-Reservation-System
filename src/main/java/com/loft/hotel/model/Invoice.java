@@ -55,6 +55,6 @@ public class Invoice {
     public void setInvoiceStatus(InvoiceStatus invoiceStatus){ this.invoiceStatus = invoiceStatus; }
     public InvoiceStatus getInvoiceStatus(){ return invoiceStatus; }
 
-    public LocalDateTime getIssuedDate(){ return issuedDate; }
-    public void setIssuedDate(LocalDateTime issuedDate){ this.issuedDate = issuedDate; }
+    public LocalDateTime getIssuedDate(){ return issuedDateTime; }
+    public void setIssuedDate(LocalDateTime issuedDate){ this.issuedDateTime = issuedDate; }
 }
