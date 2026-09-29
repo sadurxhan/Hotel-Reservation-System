@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Demo Payment Gateway | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+
+    <style>
+
+        .gateway-card {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .demo-banner {
+            margin-bottom: 22px;
+            padding: 12px 15px;
+            background: #f7f4ef;
+            border: 1px solid #e5e1da;
+            border-radius: 8px;
+            color: #6d6d6d;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .demo-banner strong {
+            color: #9a7651;
+        }
+
+        .gateway-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .gateway-summary {
+            padding: 25px;
+            background: #f7f5f1;
+            border-radius: 10px;
+        }
+
+        .gateway-summary h3 {
+            margin: 0 0 22px;
+            font-size: 18px;
+        }
+
+        .gateway-summary-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 14px 0;
+            border-bottom: 1px solid #e5e1da;
+            font-size: 14px;
+        }
+
+        .gateway-summary-row:last-child {
+            border-bottom: 0;
+        }
+
+        .gateway-summary-row span {
+            color: #777;
+        }
+
+        .gateway-total {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #d8d3cb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gateway-total strong {
+            font-size: 24px;
+        }
+
+        .gateway-form {
+            padding: 25px;
+        }
+
+        .gateway-form h3 {
+            margin: 0 0 22px;
+            font-size: 18px;
+        }
+
+        .demo-card-note {
+            margin-top: 7px;
+            padding: 9px 11px;
+            background: #f7f4ef;
+            border-radius: 6px;
+            color: #777;
+            font-size: 12px;
+        }
+
+        .gateway-form input {
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #d8d3cb;
+            border-radius: 7px;
+            background: #fff;
+            font: inherit;
+            color: #222;
+            outline: none;
+        }
+
+        .gateway-form input:focus {
+            border-color: #8a7352;
+        }
+
+        .gateway-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .gateway-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .gateway-actions {
+            margin-top: 8px;
+        }
+
+        .gateway-actions .primary-button {
+            width: 100%;
+        }
+
+        .failure-button {
+            width: 100%;
+            margin-top: 12px;
+            min-height: 46px;
+            padding: 0 22px;
+            border-radius: 7px;
+            border: 0;
+            background: #9b3f3f;
+            color: #ffffff;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .failure-button:hover {
+            background: #823333;
+        }
+
+        .gateway-security {
+            margin-top: 18px;
+            text-align: center;
+            color: #888;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 760px) {
+
+            .gateway-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gateway-form {
+                padding: 0;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brand-name">
+            The Loft by the Lake
+        </div>
+
+        <div class="brand-subtitle">
+            Hotel Reservation System
+        </div>
+
+    </div>
+
+    <nav>
+
+        <a href="/payment?reservationId="
+           th:href="@{'/payment?reservationId=' + ${payment.reservationId}}">
+            Back
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="page-container">
+
+
+    <div class="page-heading">
+
+        <p class="eyebrow">
+            DEMO PAYMENT GATEWAY
+        </p>
+
+        <h1>
+            Secure Payment
+        </h1>
+
+        <p class="description">
+            Complete your payment using the
+            demonstration payment gateway.
+        </p>
+
+    </div>
+
+
+    <section class="card gateway-card">
+
+
+        <div class="demo-banner">
+
+            <strong>
+                Demonstration Mode
+            </strong>
+
+            — This gateway is used for project
+            presentation purposes. No real payment
+            is processed.
+
+        </div>
+
+
+        <div class="gateway-grid">
+
+
+            <!-- PAYMENT SUMMARY -->
+
+            <div class="gateway-summary">
+
+                <h3>
+                    Payment Summary
+                </h3>
+
+
+                <div class="gateway-summary-row">
+
+                    <span>
+                        Reservation
+                    </span>
+
+                    <strong
+                            th:text="'#' + ${payment.reservationId}">
+                        #101
+                    </strong>
+
+                </div>
+
+
+                <div class="gateway-summary-row">
+
+                    <span>
+                        Payment Method
+                    </span>
+
+                    <strong
+                            th:text="${payment.paymentMethod}">
+                        Credit_Card
+                    </strong>
+
+                </div>
+
+
+                <div class="gateway-summary-row">
+
+                    <span>
+                        Currency
+                    </span>
+
+                    <strong>
+                        LKR
+                    </strong>
+
+                </div>
+
+
+                <div class="gateway-summary-row">
+
+                    <span>
+                        Status
+                    </span>
+
+                    <strong>
+                        Pending
+                    </strong>
+
+                </div>
+
+
+                <div class="gateway-total">
+
+                    <span>
+                        Amount
+                    </span>
+
+                    <strong>
+
+                        LKR
+
+                        <span
+                                th:text="${payment.amount}">
+                            900.00
+                        </span>
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- CARD FORM -->
+
+            <div class="gateway-form">
+
+                <h3>
+                    Card Details
+                </h3>
+
+
+                <form
+                        th:action="@{'/api/mock-payment/' + ${payment.paymentId} + '/pay'}"
+                        method="post">
+
+
+                    <div class="form-group">
+
+                        <label for="cardNumber">
+                            Card Number
+                        </label>
+
+                        <input
+                                id="cardNumber"
+                                name="cardNumber"
+                                type="text"
+                                value="4111 1111 1111 1111"
+                                maxlength="19"
+                                autocomplete="off"
+                                required>
+
+                        <div class="demo-card-note">
+
+                            Demo card:
+                            <strong>
+                                4111 1111 1111 1111
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="cardHolder">
+                            Card Holder Name
+                        </label>
+
+                        <input
+                                id="cardHolder"
+                                name="cardHolder"
+                                type="text"
+                                value="Demo User"
+                                autocomplete="off"
+                                required>
+
+                    </div>
+
+
+                    <div class="form-row">
+
+                        <div class="form-group">
+
+                            <label for="expiryDate">
+                                Expiry Date
+                            </label>
+
+                            <input
+                                    id="expiryDate"
+                                    name="expiryDate"
+                                    type="text"
+                                    value="12/30"
+                                    maxlength="5"
+                                    autocomplete="off"
+                                    required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="cvv">
+                                CVV
+                            </label>
+
+                            <input
+                                    id="cvv"
+                                    name="cvv"
+                                    type="password"
+                                    value="123"
+                                    maxlength="4"
+                                    autocomplete="off"
+                                    required>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="gateway-actions">
+
+                        <button
+                                type="submit"
+                                class="primary-button">
+
+                            Pay LKR
+                            <span
+                                    th:text="${payment.amount}">
+                                900.00
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+
+                <!-- FAILURE DEMO -->
+
+                <form
+                        th:action="@{'/api/mock-payment/' + ${payment.paymentId} + '/fail'}"
+                        method="post">
+
+                    <button
+                            type="submit"
+                            class="failure-button">
+
+                        Simulate Payment Failure
+
+                    </button>
+
+                </form>
+
+
+                <div class="gateway-security">
+
+                    🔒 Demo environment only.
+                    Card information is not stored.
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+</body>
+
+</html>
