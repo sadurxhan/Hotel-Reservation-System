@@ -1,0 +1,112 @@
+## Payment API Tests
+# Make sure Spring Boot is running on port 8080.
+# Replace reservationId=1 with an existing reservation ID if needed.
+
+### 1. Create a pending payment
+POST http://localhost:8080/api/payments?reservationId=1&paymentMethod=Credit_Card
+Accept: application/json
+
+###
+
+### 2. Get payment by ID
+# Replace YOUR_PAYMENT_ID with the paymentId returned from request 1.
+GET http://localhost:8080/api/payments/YOUR_PAYMENT_ID
+Accept: application/json
+
+###
+
+### 3. Mark payment as paid
+# Replace YOUR_PAYMENT_ID with the paymentId from request 1.
+# Replace 50000.00 with the exact amount returned by request 1.
+POST http://localhost:8080/api/payments/YOUR_PAYMENT_ID/paid?transactionId=TEST123&paidAmount=50000.00
+Accept: application/json
+
+###
+
+### 4. Mark payment as failed
+# Replace YOUR_PAYMENT_ID with a PENDING payment ID.
+POST http://localhost:8080/api/payments/YOUR_PAYMENT_ID/failed
+Accept: application/json
+
+###
+
+### Cancellation API Tests
+
+### 5. Create cancellation request
+# Replace reservationId=1 with an existing reservation ID.
+POST http://localhost:8080/api/cancellations?reservationId=1&requestedBy=Guest&cancellationReason=Testing
+Accept: application/json
+
+###
+
+### 6. Get cancellation
+# Replace YOUR_CANCELLATION_ID with the ID returned from request 5.
+GET http://localhost:8080/api/cancellations/YOUR_CANCELLATION_ID
+Accept: application/json
+
+###
+
+### 7. Approve cancellation
+POST http://localhost:8080/api/cancellations/YOUR_CANCELLATION_ID/approve
+Accept: application/json
+
+###
+
+### 8. Reject cancellation
+POST http://localhost:8080/api/cancellations/YOUR_CANCELLATION_ID/reject
+Accept: application/json
+
+###
+
+### Refund API Tests
+
+### 9. Create refund
+# Requires a PAID payment and an APPROVED cancellation.
+POST http://localhost:8080/api/refunds?paymentId=YOUR_PAYMENT_ID&cancellationId=YOUR_CANCELLATION_ID
+Accept: application/json
+
+###
+
+### 10. Get refund
+GET http://localhost:8080/api/refunds/YOUR_REFUND_ID
+Accept: application/json
+
+###
+
+### 11. Approve refund
+POST http://localhost:8080/api/refunds/YOUR_REFUND_ID/approve
+Accept: application/json
+
+###
+
+### 12. Mark refund as refunded
+POST http://localhost:8080/api/refunds/YOUR_REFUND_ID/refunded
+Accept: application/json
+
+###
+
+### 13. Reject refund
+POST http://localhost:8080/api/refunds/YOUR_REFUND_ID/reject
+Accept: application/json
+
+###
+
+### Invoice API Tests
+
+### 14. Create invoice
+# Normally the invoice is automatically created when a payment becomes PAID.
+# Use this only if an invoice does not already exist for the payment.
+POST http://localhost:8080/api/invoices?paymentId=YOUR_PAYMENT_ID
+Accept: application/json
+
+###
+
+### 15. Get invoice
+GET http://localhost:8080/api/invoices/YOUR_INVOICE_ID
+Accept: application/json
+
+###
+
+### 16. Mark invoice as sent
+POST http://localhost:8080/api/invoices/YOUR_INVOICE_ID/sent
+Accept: application/json

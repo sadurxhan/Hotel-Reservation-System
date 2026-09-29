@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -28,9 +27,7 @@ public class RefundService {
 
     // Create refund after an approved cancellation
     @Transactional
-    public Refund createRefund(String paymentId,
-                               String cancellationId) {
-
+    public Refund createRefund(String paymentId, String cancellationId) {
         // Find the payment
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() ->
@@ -54,8 +51,7 @@ public class RefundService {
                         ));
 
         // Cancellation must be approved
-        if (cancellation.getCancellationStatus()
-                != Cancellation.CancellationStatus.APPROVED) {
+        if (cancellation.getCancellationStatus() != Cancellation.CancellationStatus.APPROVED) {
             throw new IllegalStateException(
                     "Only APPROVED cancellations can be refunded."
             );
@@ -71,8 +67,7 @@ public class RefundService {
                         ));
 
         // Check that the payment belongs to this reservation
-        if (!payment.getReservationId()
-                .equals(reservation.getReservationId())) {
+        if (payment.getReservationId() != reservation.getReservationId()) {
             throw new IllegalStateException(
                     "Payment does not belong to this reservation."
             );
@@ -85,11 +80,9 @@ public class RefundService {
             );
         }
 
-        // Calculate days between today and check-in
-        long daysBeforeCheckIn = ChronoUnit.DAYS.between(
-                LocalDate.now(),
-                reservation.getCheckInDate()
-        );
+        // Calculate days before check-in
+        // using the date the cancellation was requested
+        long daysBeforeCheckIn = ChronoUnit.DAYS.between(cancellation.getRequestedDateTime().toLocalDate(), reservation.getCheckInDate());
 
         // Calculate refund percentage
         BigDecimal refundPercentage;
@@ -112,11 +105,38 @@ public class RefundService {
                 .multiply(refundPercentage)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        // Create a refund-specific reason
+        String refundReason;
+
+        if (daysBeforeCheckIn >= 5) {
+            refundReason =
+                    "100% refund applied according to cancellation policy "
+                            + "(cancellation requested " + daysBeforeCheckIn
+                            + " days before check-in).";
+
+        } else if (daysBeforeCheckIn >= 3) {
+            refundReason =
+                    "75% refund applied according to cancellation policy "
+                            + "(cancellation requested " + daysBeforeCheckIn
+                            + " days before check-in).";
+
+        } else {
+            refundReason =
+                    "No refund applicable according to cancellation policy "
+                            + "(cancellation requested " + daysBeforeCheckIn
+                            + " days before check-in).";
+        }
+
         // Generate refund ID
         String refundId = UUID.randomUUID().toString();
 
         // Create refund record
-        Refund refund = new Refund(refundId, paymentId, cancellation.getRequestedBy() == Cancellation.RequestedBy.Guest ? Refund.RefundType.Guest_Initiated : Refund.RefundType.Admin_Initiated, Refund.RefundStatus.PENDING, cancellation.getCancellationReason(), refundAmount
+        Refund refund = new Refund(
+                refundId,
+                paymentId,
+                Refund.RefundStatus.PENDING,
+                refundReason,
+                refundAmount
         );
 
         // Save refund
@@ -125,6 +145,7 @@ public class RefundService {
 
     // Find refund by ID
     public Refund getRefund(String refundId) {
+
         return refundRepository.findById(refundId)
                 .orElseThrow(() ->
                         new RuntimeException(
@@ -135,6 +156,7 @@ public class RefundService {
     // Approve refund
     @Transactional
     public Refund approveRefund(String refundId) {
+
         Refund refund = getRefund(refundId);
 
         // Only PENDING refunds can be approved
@@ -151,6 +173,7 @@ public class RefundService {
             );
         }
 
+        // Approve refund
         refund.setRefundStatus(Refund.RefundStatus.APPROVED);
         return refundRepository.save(refund);
     }
@@ -158,7 +181,6 @@ public class RefundService {
     // Mark refund as completed
     @Transactional
     public Refund markRefundAsRefunded(String refundId) {
-
         Refund refund = getRefund(refundId);
 
         // Only APPROVED refunds can be completed
@@ -168,6 +190,7 @@ public class RefundService {
             );
         }
 
+        // Mark refund as completed
         refund.setRefundStatus(Refund.RefundStatus.REFUNDED);
         return refundRepository.save(refund);
     }
@@ -175,7 +198,6 @@ public class RefundService {
     // Reject refund
     @Transactional
     public Refund rejectRefund(String refundId) {
-
         Refund refund = getRefund(refundId);
 
         // Only PENDING refunds can be rejected
@@ -185,6 +207,7 @@ public class RefundService {
             );
         }
 
+        // Reject refund
         refund.setRefundStatus(Refund.RefundStatus.REJECTED);
         return refundRepository.save(refund);
     }

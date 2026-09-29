@@ -20,7 +20,7 @@ public class Cancellation {
     private LocalDateTime requestedDateTime;
 
     public enum RequestedBy {
-        Guest, Owner
+        Guest, Admin
     }
 
     @Enumerated(EnumType.STRING)

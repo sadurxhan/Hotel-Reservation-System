@@ -16,14 +16,6 @@ public class Refund {
     @Column(name = "payment_id", nullable = false, length = 40)
     private String paymentId;
 
-    public enum RefundType{
-        Guest_Initiated, Admin_Initiated
-    }
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "refund_type", nullable = false)
-    private RefundType refundType;
-
     public enum RefundStatus{
         PENDING, APPROVED, REFUNDED, REJECTED
     }
@@ -47,10 +39,9 @@ public class Refund {
     }
 
     // Parameterized constructor
-    public Refund( String refundId, String paymentId, RefundType refundType, RefundStatus refundStatus, String refundReason, BigDecimal refundAmount ) {
+    public Refund( String refundId, String paymentId, RefundStatus refundStatus, String refundReason, BigDecimal refundAmount ) {
         this.refundId = refundId;
         this.paymentId = paymentId;
-        this.refundType = refundType;
         this.refundStatus = refundStatus;
         this.refundReason = refundReason;
         this.refundAmount = refundAmount;
@@ -61,9 +52,6 @@ public class Refund {
 
     public void setPaymentId(String paymentId){ this.paymentId = paymentId; }
     public String getPaymentId(){ return paymentId; }
-
-    public void setRefundType(RefundType refundType){ this.refundType = refundType; }
-    public RefundType getRefundType(){ return refundType; }
 
     public void setRefundStatus(RefundStatus refundStatus){ this.refundStatus = refundStatus; }
     public RefundStatus getRefundStatus(){ return refundStatus; }
