@@ -1,6 +1,6 @@
 package com.loft.hotel.service;
 
-import com.loft.hotel.model.Activity;
+import com.loft.hotel.entity.Activity;
 import com.loft.hotel.repository.ActivityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

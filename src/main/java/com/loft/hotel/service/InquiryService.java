@@ -1,6 +1,6 @@
 package com.loft.hotel.service;
 
-import com.loft.hotel.model.Inquiry;
+import com.loft.hotel.entity.Inquiry;
 import com.loft.hotel.repository.InquiryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;

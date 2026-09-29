@@ -1,6 +1,6 @@
 package com.loft.hotel.repository;
 
-import com.loft.hotel.model.Activity;
+import com.loft.hotel.entity.Activity;
 // This one's for Activity objects (kayaking, cycling, etc.).
 
 import org.springframework.data.jpa.repository.JpaRepository;

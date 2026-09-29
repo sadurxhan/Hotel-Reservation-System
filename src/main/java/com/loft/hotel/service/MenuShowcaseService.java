@@ -1,6 +1,6 @@
 package com.loft.hotel.service;
 
-import com.loft.hotel.model.MenuShowcase;
+import com.loft.hotel.entity.MenuShowcase;
 import com.loft.hotel.repository.MenuShowcaseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

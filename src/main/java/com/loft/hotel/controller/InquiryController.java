@@ -1,6 +1,6 @@
 package com.loft.hotel.controller;
 
-import com.loft.hotel.model.Inquiry;
+import com.loft.hotel.entity.Inquiry;
 import com.loft.hotel.service.InquiryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

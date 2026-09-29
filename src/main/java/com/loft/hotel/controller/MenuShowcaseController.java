@@ -2,7 +2,7 @@ package com.loft.hotel.controller;
 // Controllers live in their own "controller" package — this is the
 // layer that listens for web requests and decides what to do with them.
 
-import com.loft.hotel.model.MenuShowcase;
+import com.loft.hotel.entity.MenuShowcase;
 import com.loft.hotel.service.MenuShowcaseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

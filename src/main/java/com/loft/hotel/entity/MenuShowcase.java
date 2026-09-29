@@ -1,4 +1,4 @@
-package com.loft.hotel.model;
+package com.loft.hotel.entity;
 
 import jakarta.persistence.*;
 

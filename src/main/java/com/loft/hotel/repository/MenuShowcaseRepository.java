@@ -1,6 +1,6 @@
 package com.loft.hotel.repository;
 
-import com.loft.hotel.model.MenuShowcase;
+import com.loft.hotel.entity.MenuShowcase;
 // This one's for MenuShowcase objects (your menu display items).
 
 import org.springframework.data.jpa.repository.JpaRepository;
