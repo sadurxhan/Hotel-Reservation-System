@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!-- That xmlns:th line is required — it's what unlocks Thymeleaf's
+     special th: attributes below, letting HTML show dynamic data. -->
+<head>
+    <title>Our Menu</title>
+</head>
+<body>
+
+<h1>Our Menu</h1>
+
+<div th:each="item : ${menuItems}">
+    <!-- this block repeats once per menu item. -->
+
+    <h2 th:text="${item.title}">Sample Title</h2>
+    <!--  it's a fallback, not what guests will actually see. -->
+
+    <p th:text="${item.mealType}">Sample Type</p>
+    <p th:text="${item.mealDescription}">Sample Description</p>
+
+</div>
+
+</body>
+</html>
