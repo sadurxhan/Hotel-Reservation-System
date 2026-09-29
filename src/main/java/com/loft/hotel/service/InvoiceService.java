@@ -5,6 +5,7 @@ import com.loft.hotel.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -37,10 +38,11 @@ public class InvoiceService {
         }
 
         // Check whether an invoice already exists
-        if (invoiceRepository.findByPaymentId(paymentId).isPresent()) {
-            throw new IllegalStateException(
-                    "Invoice already exists for this payment."
-            );
+        Optional<Invoice> existingInvoice =
+                invoiceRepository.findByPaymentId(paymentId);
+
+        if (existingInvoice.isPresent()) {
+            return existingInvoice.get();
         }
 
         // Generate invoice ID

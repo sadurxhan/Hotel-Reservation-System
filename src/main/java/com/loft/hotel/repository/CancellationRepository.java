@@ -7,6 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface CancellationRepository extends JpaRepository<Cancellation, String> {
-    Optional<Cancellation> findByReservationId(Integer reservationId);
+public interface CancellationRepository
+        extends JpaRepository<Cancellation, String> {
+
+    Optional<Cancellation> findByReservationId(
+            Integer reservationId
+    );
 }

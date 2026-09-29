@@ -33,7 +33,7 @@ public class PaymentController {
     }
 
     // Mark payment as PAID
-    // Temporary endpoint for testing before PayHere integration
+    // Available for API-based payment confirmation
     @PostMapping("/{paymentId}/paid")
     public ResponseEntity<Payment> markPaymentAsPaid(
             @PathVariable String paymentId,
@@ -42,6 +42,15 @@ public class PaymentController {
 
         Payment payment = paymentService.markPaymentAsPaid(paymentId, transactionId, paidAmount);
         return ResponseEntity.ok(payment);
+    }
+
+    @GetMapping
+    public ResponseEntity<Payment> getPaidPaymentByReservation(
+            @RequestParam Integer reservationId) {
+
+        return ResponseEntity.ok(
+                paymentService.getPaidPaymentByReservationId(reservationId)
+        );
     }
 
     // Mark payment as FAILED
