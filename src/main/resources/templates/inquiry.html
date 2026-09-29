@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Contact Us - The Loft by the Lake</title>
+    <style>
+        body {
+            font-family: Georgia, serif;
+            background: #f5f0eb;
+            margin: 0;
+            padding: 40px;
+        }
+        .container {
+            display: flex;
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .box {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-top: 16px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #6b1e3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .info-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .icon {
+            font-size: 20px;
+        }
+        iframe {
+            width: 100%;
+            border: 0;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- BOX 1: The inquiry form -->
+    <div class="box">
+        <h1>Send Us an Inquiry</h1>
+        <p>Fill in the details below and our team will get back to you as soon as possible.</p>
+
+        <form th:action="@{/inquiry}" method="post">
+
+            <label>Full Name</label>
+            <input type="text" name="fullName" placeholder="Your name" required>
+
+            <label>Email Address</label>
+            <input type="email" name="email" placeholder="your@email.com" required>
+
+            <label>Phone Number</label>
+            <input type="tel" name="phoneNo" placeholder="+94 7X XXX XXXX" required>
+
+            <label>Subject</label>
+            <select name="subject" required>
+                <option value="General Inquiry">General Inquiry</option>
+                <option value="Booking Question">Booking Question</option>
+                <option value="Pets & Policies">Pets & Policies</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label>Message</label>
+            <textarea name="message" rows="5" placeholder="Type your message here..." required></textarea>
+
+            <button type="submit">Send Inquiry</button>
+
+        </form>
+    </div>
+
+    <!-- BOX 2: Reach Us -->
+    <div class="box">
+        <h1>To Reach Us</h1>
+
+        <div class="info-row">
+            <span class="icon">📞</span>
+            <div>
+                <strong>Phone</strong><br>
+                <a href="tel:+94764816177">076 481 6177</a><br>
+                (9:00 AM – 9:00 PM)
+            </div>
+        </div>
+
+        <div class="info-row">
+            <span class="icon">✉️</span>
+            <div>
+                <strong>Email</strong><br>
+                <a href="mailto:info@theloftbythelake.com">info@theloftbythelake.com</a>
+            </div>
+        </div>
+
+        <div class="info-row">
+            <span class="icon">📍</span>
+            <div>
+                <strong>Location</strong><br>
+                The Loft by the Lake<br>
+                Embogama, Kurunegala, Sri Lanka
+            </div>
+        </div>
+
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.746459055402!2d80.36097417476746!3d7.921530092102024!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3afcc5046664e843%3A0xe14cbd40be0452fd!2sThe%20Loft%20by%20the%20Lake!5e0!3m2!1sen!2slk!4v1790516967800!5m2!1sen!2slk" height="220" loading="lazy" allowfullscreen=""></iframe>
+
+    </div>
+
+</div>
+
+</body>
+</html>
