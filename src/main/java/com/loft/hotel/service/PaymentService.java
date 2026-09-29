@@ -33,6 +33,13 @@ public class PaymentService {
                         new RuntimeException(
                                 "Reservation not found: " + reservationId));
 
+        // Checking whether payment is already created
+        if (paymentRepository.findByReservationIdAndPaymentStatus(reservationId, Payment.PaymentStatus.PENDING).isPresent()) {
+            throw new IllegalStateException(
+                    "A pending payment already exists for this reservation."
+            );
+        }
+
         // Get the payment amount from the reservation
         BigDecimal amount = reservation.getTotalAmount();
 
@@ -41,12 +48,6 @@ public class PaymentService {
 
         // Set payment date/time
         payment.setPaymentDateTime(LocalDateTime.now());
-
-        if (paymentRepository.findByReservationIdAndPaymentStatus(reservationId, Payment.PaymentStatus.PENDING).isPresent()) {
-            throw new IllegalStateException(
-                    "A pending payment already exists for this reservation."
-            );
-        }
 
         // Save payment
         return paymentRepository.save(payment);
