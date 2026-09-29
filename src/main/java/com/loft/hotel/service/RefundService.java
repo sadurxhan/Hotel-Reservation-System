@@ -66,7 +66,7 @@ public class RefundService {
                         ));
 
         // Make sure payment belongs to the same reservation
-        if (payment.getReservationId() != reservation.getReservationId()) {
+        if (!payment.getReservationId().equals(reservation.getReservationId())) {
             throw new IllegalStateException(
                     "Payment does not belong to this reservation."
             );

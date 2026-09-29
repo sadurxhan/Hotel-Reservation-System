@@ -77,4 +77,12 @@ public class InvoiceService {
         invoice.setInvoiceStatus(Invoice.InvoiceStatus.SENT);
         return invoiceRepository.save(invoice);
     }
+
+    public Invoice getInvoiceByPaymentId(String paymentId) {
+        return invoiceRepository.findByPaymentId(paymentId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Invoice not found for payment: " + paymentId
+                        ));
+    }
 }

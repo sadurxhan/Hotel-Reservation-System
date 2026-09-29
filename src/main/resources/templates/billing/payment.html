@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Payment | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        <span class="brand-name">The Loft</span>
+        <span class="brand-subtitle">by the Lake</span>
+    </div>
+
+    <nav>
+        <a href="#payment">Payment</a>
+        <a th:href="@{/cancellation(reservationId=${reservation.reservationId})}">
+            Cancellation
+        </a>
+    </nav>
+
+</header>
+
+
+<main class="page-container">
+
+    <section class="page-heading">
+
+        <p class="eyebrow">
+            RESERVATION PAYMENT
+        </p>
+
+        <h1>
+            Complete your payment
+        </h1>
+
+        <p class="description">
+            Your reservation requires full payment before it can be confirmed.
+        </p>
+
+    </section>
+
+
+    <section class="billing-grid">
+
+        <!-- Reservation summary -->
+
+        <div class="card">
+
+            <div class="card-header">
+                <h2>Reservation Details</h2>
+            </div>
+
+            <div class="details">
+
+                <div class="detail-row">
+                    <span>Reservation ID</span>
+                    <strong th:text="${reservation.reservationId}">
+                        101
+                    </strong>
+                </div>
+
+                <div class="detail-row">
+                    <span>Check-in</span>
+                    <strong th:text="${reservation.checkInDate}">
+                        2026-10-10
+                    </strong>
+                </div>
+
+                <div class="detail-row">
+                    <span>Check-out</span>
+                    <strong th:text="${reservation.checkOutDate}">
+                        2026-10-12
+                    </strong>
+                </div>
+
+                <div class="detail-row">
+                    <span>Guests</span>
+                    <strong th:text="${reservation.numberOfGuests}">
+                        2
+                    </strong>
+                </div>
+
+                <div class="detail-row total-row">
+                    <span>Total amount</span>
+
+                    <strong>
+                        LKR
+                        <span th:text="${#numbers.formatDecimal(
+                            reservation.totalAmount,
+                            2,
+                            2
+                        )}">
+                            60000.00
+                        </span>
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Payment -->
+
+        <div class="card" id="payment">
+
+            <div class="card-header">
+
+                <h2>Payment Method</h2>
+
+                <span class="secure-label">
+                    Secure Payment
+                </span>
+
+            </div>
+
+
+            <form id="paymentForm">
+
+                <input type="hidden"
+                       id="reservationId"
+                       th:value="${reservation.reservationId}">
+
+                <div class="form-group">
+
+                    <label for="paymentMethod">
+                        Select payment method
+                    </label>
+
+                    <select id="paymentMethod"
+                            required>
+
+                        <option value="">
+                            Select a payment method
+                        </option>
+
+                        <option value="Credit_Card">
+                            Credit Card
+                        </option>
+
+                        <option value="Debit_Card">
+                            Debit Card
+                        </option>
+
+                        <option value="Online_Banking">
+                            Online Banking
+                        </option>
+
+                        <option value="QR_Payment">
+                            QR Payment
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="payment-amount">
+
+                    <span>Amount to pay</span>
+
+                    <strong>
+                        LKR
+                        <span th:text="${#numbers.formatDecimal(
+                            reservation.totalAmount,
+                            2,
+                            2
+                        )}">
+                            60000.00
+                        </span>
+                    </strong>
+
+                </div>
+
+
+                <div id="paymentMessage"
+                     class="message hidden">
+                </div>
+
+
+                <button type="submit"
+                        id="createPaymentButton"
+                        class="primary-button">
+
+                    Continue to Payment
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- Temporary mock gateway -->
+
+    <section id="mockPaymentSection"
+             class="card mock-card hidden">
+
+        <div class="card-header">
+
+            <h2>Test Payment Gateway</h2>
+
+            <span class="test-label">
+                SANDBOX PREPARATION
+            </span>
+
+        </div>
+
+        <p class="mock-description">
+
+            PayHere Sandbox is not connected yet.
+            This temporary section simulates the gateway response
+            so the complete payment workflow can be tested.
+
+        </p>
+
+
+        <div class="mock-payment-info">
+
+            <div>
+                <span>Payment ID</span>
+
+                <strong id="mockPaymentId">
+                    -
+                </strong>
+            </div>
+
+            <div>
+                <span>Amount</span>
+
+                <strong>
+                    LKR
+                    <span th:text="${#numbers.formatDecimal(
+                        reservation.totalAmount,
+                        2,
+                        2
+                    )}">
+                        60000.00
+                    </span>
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="mock-actions">
+
+            <button type="button"
+                    id="mockSuccessButton"
+                    class="success-button">
+
+                Simulate Successful Payment
+
+            </button>
+
+
+            <button type="button"
+                    id="mockFailureButton"
+                    class="danger-button">
+
+                Simulate Failed Payment
+
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script th:src="@{/js/billing.js}"></script>
+
+</body>
+</html>
