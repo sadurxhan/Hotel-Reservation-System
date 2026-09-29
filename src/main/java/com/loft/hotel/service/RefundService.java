@@ -17,7 +17,6 @@ public class RefundService {
     private final ReservationRepository reservationRepository;
     private final CancellationRepository cancellationRepository;
 
-    // Spring injects all required repositories
     public RefundService(RefundRepository refundRepository, PaymentRepository paymentRepository, ReservationRepository reservationRepository, CancellationRepository cancellationRepository) {
         this.refundRepository = refundRepository;
         this.paymentRepository = paymentRepository;
@@ -28,21 +27,21 @@ public class RefundService {
     // Create refund after an approved cancellation
     @Transactional
     public Refund createRefund(String paymentId, String cancellationId) {
-        // Find the payment
+        // Find payment
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Payment not found: " + paymentId
                         ));
 
-        // Payment must be PAID before it can be refunded
+        // Payment must be PAID
         if (payment.getPaymentStatus() != Payment.PaymentStatus.PAID) {
             throw new IllegalStateException(
                     "Only PAID payments can be refunded."
             );
         }
 
-        // Find the cancellation
+        // Find cancellation
         Cancellation cancellation = cancellationRepository
                 .findById(cancellationId)
                 .orElseThrow(() ->
@@ -50,14 +49,14 @@ public class RefundService {
                                 "Cancellation not found: " + cancellationId
                         ));
 
-        // Cancellation must be approved
+        // Cancellation must be APPROVED
         if (cancellation.getCancellationStatus() != Cancellation.CancellationStatus.APPROVED) {
             throw new IllegalStateException(
                     "Only APPROVED cancellations can be refunded."
             );
         }
 
-        // Find the reservation
+        // Find reservation
         Reservation reservation = reservationRepository
                 .findById(cancellation.getReservationId())
                 .orElseThrow(() ->
@@ -66,38 +65,68 @@ public class RefundService {
                                         + cancellation.getReservationId()
                         ));
 
-        // Check that the payment belongs to this reservation
+        // Make sure payment belongs to the same reservation
         if (payment.getReservationId() != reservation.getReservationId()) {
             throw new IllegalStateException(
                     "Payment does not belong to this reservation."
             );
         }
 
-        // Check if a refund already exists for this payment
+        // Only one refund is allowed per payment
         if (refundRepository.findByPaymentId(paymentId).isPresent()) {
             throw new IllegalStateException(
                     "A refund already exists for this payment."
             );
         }
 
-        // Calculate days before check-in
-        // using the date the cancellation was requested
-        long daysBeforeCheckIn = ChronoUnit.DAYS.between(cancellation.getRequestedDateTime().toLocalDate(), reservation.getCheckInDate());
+        // Calculate number of days between cancellation request
+        // and the reservation check-in date
+        long daysBeforeCheckIn = ChronoUnit.DAYS.between(
+                cancellation.getRequestedDateTime().toLocalDate(),
+                reservation.getCheckInDate()
+        );
 
-        // Calculate refund percentage
+        // Determine refund percentage and status
         BigDecimal refundPercentage;
+        Refund.RefundStatus refundStatus;
+        String refundReason;
 
         if (daysBeforeCheckIn >= 5) {
             // 5 or more days = 100% refund
             refundPercentage = new BigDecimal("1.00");
+            refundStatus = Refund.RefundStatus.PENDING;
+
+            refundReason =
+                    "100% refund applied according to cancellation policy "
+                            + "(cancellation requested "
+                            + daysBeforeCheckIn
+                            + " days before check-in).";
 
         } else if (daysBeforeCheckIn >= 3) {
             // 3-4 days = 75% refund
             refundPercentage = new BigDecimal("0.75");
+            refundStatus = Refund.RefundStatus.PENDING;
+
+            refundReason =
+                    "75% refund applied according to cancellation policy "
+                            + "(cancellation requested "
+                            + daysBeforeCheckIn
+                            + " days before check-in).";
 
         } else {
             // 0-2 days = no refund
+            // Negative values are also rejected
             refundPercentage = BigDecimal.ZERO;
+            refundStatus = Refund.RefundStatus.REJECTED;
+
+            // Prevent negative days from appearing in the reason
+            long displayDays = Math.max(daysBeforeCheckIn, 0);
+
+            refundReason =
+                    "No refund applicable according to cancellation policy "
+                            + "(cancellation requested "
+                            + displayDays
+                            + " days before check-in).";
         }
 
         // Calculate refund amount
@@ -105,36 +134,14 @@ public class RefundService {
                 .multiply(refundPercentage)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // Create a refund-specific reason
-        String refundReason;
-
-        if (daysBeforeCheckIn >= 5) {
-            refundReason =
-                    "100% refund applied according to cancellation policy "
-                            + "(cancellation requested " + daysBeforeCheckIn
-                            + " days before check-in).";
-
-        } else if (daysBeforeCheckIn >= 3) {
-            refundReason =
-                    "75% refund applied according to cancellation policy "
-                            + "(cancellation requested " + daysBeforeCheckIn
-                            + " days before check-in).";
-
-        } else {
-            refundReason =
-                    "No refund applicable according to cancellation policy "
-                            + "(cancellation requested " + daysBeforeCheckIn
-                            + " days before check-in).";
-        }
-
         // Generate refund ID
         String refundId = UUID.randomUUID().toString();
 
-        // Create refund record
+        // Create refund
         Refund refund = new Refund(
                 refundId,
                 paymentId,
-                Refund.RefundStatus.PENDING,
+                refundStatus,
                 refundReason,
                 refundAmount
         );
@@ -145,7 +152,6 @@ public class RefundService {
 
     // Find refund by ID
     public Refund getRefund(String refundId) {
-
         return refundRepository.findById(refundId)
                 .orElseThrow(() ->
                         new RuntimeException(
@@ -156,20 +162,14 @@ public class RefundService {
     // Approve refund
     @Transactional
     public Refund approveRefund(String refundId) {
-
         Refund refund = getRefund(refundId);
 
         // Only PENDING refunds can be approved
-        if (refund.getRefundStatus() != Refund.RefundStatus.PENDING) {
+        if (refund.getRefundStatus()
+                != Refund.RefundStatus.PENDING) {
+
             throw new IllegalStateException(
                     "Only PENDING refunds can be approved."
-            );
-        }
-
-        // A zero amount means there is no refund
-        if (refund.getRefundAmount().compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalStateException(
-                    "This cancellation is not eligible for a refund."
             );
         }
 
@@ -195,12 +195,12 @@ public class RefundService {
         return refundRepository.save(refund);
     }
 
-    // Reject refund
+    // Reject refund manually
     @Transactional
     public Refund rejectRefund(String refundId) {
         Refund refund = getRefund(refundId);
 
-        // Only PENDING refunds can be rejected
+        // Only PENDING refunds can be rejected manually
         if (refund.getRefundStatus() != Refund.RefundStatus.PENDING) {
             throw new IllegalStateException(
                     "Only PENDING refunds can be rejected."
