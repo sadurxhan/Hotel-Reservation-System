@@ -1,13 +1,15 @@
+show databases;
+select database();
+
 -- Creating and selecting the database
-CREATE DATABASE IF NOT EXISTS hotel_reservation_db
+CREATE DATABASE hotel_reservation_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 USE hotel_reservation_db;
 
-
--- ============================================================================
--- 1. DDL: TABLE CREATION (BASE TABLES & ENTITIES)
--- ============================================================================
+-- =======================
+-- 1. CREATING DB TABLES
+-- =======================
 
 -- Base lookup and tables
 
@@ -28,7 +30,9 @@ CREATE TABLE room (
     room_type VARCHAR(100) NOT NULL,
     room_description TEXT,
     capacity INT NOT NULL,
-    room_status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE'
+    room_status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    tier_id INT NULL
 );
 
 -- IT25102812
@@ -37,7 +41,7 @@ CREATE TABLE room_pricing_tier (
     room_id INT NOT NULL,
     guest_count INT NOT NULL,
     tier_name VARCHAR(50) NOT NULL,
-    base_price DECIMAL(10,2) NOT NULL,
+    base_rate DECIMAL(10,2) NOT NULL,
     CONSTRAINT fk_tier_room FOREIGN KEY (room_id) REFERENCES room(room_id) ON DELETE CASCADE,
     CONSTRAINT uq_room_guest_tier UNIQUE (room_id, guest_count)
 );
@@ -131,7 +135,7 @@ CREATE TABLE IF NOT EXISTS calendar_block (
 -- Table for dynamic rate overrides and packages
 
 -- IT25102998
-CREATE TABLE IF NOT EXISTS rate_override (
+CREATE TABLE rate_override (
     rate_id INT AUTO_INCREMENT PRIMARY KEY,
     package_name VARCHAR(100) NULL,
     package_description TEXT NULL,
@@ -194,10 +198,9 @@ CREATE TABLE activity (
 CREATE INDEX idx_calendar_block_date ON calendar_block(blocked_date);
 CREATE INDEX idx_rate_override_dates ON rate_override(start_date, end_date);
 
-
--- ============================================================================
--- 2. DML: DATA POPULATION
--- ============================================================================
+-- =================
+-- DATA POPULATION
+-- =================
 
 -- Base lookup and tables
 
@@ -208,18 +211,18 @@ INSERT INTO guest (fname, lname, email, phone_no) VALUES
 ('Vinuthi', 'Silva', 'vinuthi.s@yahoo.com', '+94709876543');
 
 -- IT25102812
-INSERT INTO room (room_id, room_number, room_type, room_description, capacity, room_status) VALUES
-(1, '101', 'Deluxe Ocean View', 'Spacious king-bed room with sea view', 2, 'AVAILABLE'),
-(2, '102', 'Standard Double', 'Comfortable double bed room', 2, 'AVAILABLE'),
-(3, '201', 'Family Suite', 'Two-bedroom suite with living area', 4, 'AVAILABLE'),
-(4, '202', 'Executive Suite', 'Luxury suite with private balcony', 3, 'MAINTENANCE');
+INSERT INTO room (room_id, room_number, room_type, room_description, capacity, room_status, is_active, tier_id) VALUES
+(1, '101', 'Deluxe Ocean View', 'Spacious king-bed room with sea view', 2, 'AVAILABLE', TRUE, 1),
+(2, '102', 'Standard Double', 'Comfortable double bed room', 2, 'AVAILABLE', TRUE, 2),
+(3, '201', 'Family Suite', 'Two-bedroom suite with living area', 4, 'AVAILABLE', TRUE, NULL),
+(4, '202', 'Executive Suite', 'Luxury suite with private balcony', 3, 'MAINTENANCE', TRUE, NULL);
 
 -- IT25102812
-INSERT INTO room_pricing_tier (room_id, guest_count, tier_name, base_price) VALUES
-(1, 1, 'Single Occupancy', 10000.00),
-(1, 2, 'Double Occupancy', 15000.00),
-(2, 2, 'Standard Rate', 9000.00),
-(3, 4, 'Family Package', 25000.00);
+INSERT INTO room_pricing_tier (tier_id, room_id, guest_count, tier_name, base_rate) VALUES
+(1, 1, 1, 'Single Occupancy', 10000.00),
+(2, 1, 2, 'Double Occupancy', 15000.00),
+(3, 2, 2, 'Standard Rate', 9000.00),
+(4, 3, 4, 'Family Package', 25000.00);
 
 -- Main tables used for bookings
 
@@ -236,6 +239,7 @@ INSERT INTO reservation_room_selection (selection_id, reservation_id, room_id, n
 (2, 102, 3, 4, 25000.00),
 (3, 103, 2, 1, 9000.00),
 (4, 104, 1, 2, 15000.00);
+
 
 -- Payment and billing tables
 
@@ -274,6 +278,7 @@ INSERT INTO rate_override (package_name, package_description, start_date, end_da
 ('Weekend Getaway', '15% surcharge for peak weekend bookings', '2026-10-01', '2026-10-31', 1.15, 2, TRUE, NULL),
 ('Long Stay Discount', '10% discount for stays over 5 nights', '2026-11-01', '2026-11-30', 0.90, 5, TRUE, 1);
 
+
 -- Guest experience and inquiries
 
 -- IT25102954
@@ -300,10 +305,9 @@ INSERT INTO activity (title, activity_description, pricing_note, is_active) VALU
 ('Lakeside Cycling', 'Guided cycling tour around the paddy fields', 'LKR 1,500 per person', TRUE),
 ('Sunset Bird Watching', 'Spot local bird species along the shoreline', 'Complimentary for guests', TRUE);
 
-
--- ============================================================================
--- 3. VERIFICATION & ANALYTICS QUERIES
--- ============================================================================
+-- ==================================
+-- VERIFICATION & ANALYTICS QUERIES
+-- ==================================
 
 -- Base table verification
 SELECT * FROM guest;
@@ -318,15 +322,17 @@ SELECT * FROM review;
 SELECT * FROM menu_showcase;
 SELECT * FROM activity;
 
--- queries IT25102812 --
--- Calculate Total Revenue Generated by Reservation Status --
+-- ============================================
+-- queries IT25102812 (Reservation life cycle)
+-- ============================================
+-- Calculate Total Revenue Generated by Reservation Status
 SELECT reservation_status,
     COUNT(reservation_id) AS total_reservations,
     SUM(total_amount) AS total_revenue
 FROM reservation
 GROUP BY reservation_status;
 
--- Find Guests with Multiple Active or Past Reservations --
+-- Find Guests with Multiple Active or Past Reservations
 SELECT guest.guest_id,
     CONCAT(guest.fname, ' ', guest.lname) AS guest_full_name,
     guest.email,
@@ -336,119 +342,134 @@ JOIN reservation ON guest.guest_id = reservation.guest_id
 GROUP BY guest.guest_id, guest.fname, guest.lname, guest.email
 HAVING COUNT(reservation.reservation_id) > 1;
 
--- Extend or Modify Check-Out Date and Recalculate Total --
+-- Extend or Modify Check-Out Date and Recalculate Total
 UPDATE reservation
 SET check_out_date = '2026-10-07',
     total_amount = 900.00
 WHERE reservation_id = 101
   AND reservation_status = 'CONFIRMED';
   
--- Cancel Pending Reservation --
+-- Cancel Pending Reservation 
 UPDATE reservation 
 SET reservation_status = 'CANCELLED' 
 WHERE reservation_id = 102 
   AND reservation_status = 'PENDING';
 
--- IT25102967
--- 1. Display all successful payments
+-- ==============================================
+-- queries IT25102967 (Billing and cancellation)
+-- ==============================================
+-- Display all successful payments
 SELECT * FROM payment WHERE payment_status = 'PAID';
 
--- 2. Find payment methods with total successful payments above 50,000
+-- Find payment methods with total successful payments above 50,000
 SELECT payment_method, COUNT(*) AS payment_count, SUM(amount) AS total_amount FROM payment
 WHERE payment_status = 'PAID' GROUP BY payment_method HAVING SUM(amount) >= 50000;
 
--- 3. Find the total amount paid by each guest
+-- Find the total amount paid by each guest
 SELECT res.guest_id, SUM(p.amount) AS total_paid FROM payment p 
 JOIN reservation res ON p.reservation_id = res.reservation_id
 WHERE p.payment_status = 'PAID' GROUP BY res.guest_id;
 
--- 4. Find the largest payment recorded
+-- Find the largest payment recorded
 SELECT * FROM payment ORDER BY amount DESC LIMIT 1;
 
--- IT25102967
--- 5. Display refunds with the original payment amount
+-- Display refunds with the original payment amount
 SELECT r.refund_id, r.payment_id, r.refund_amount, p.amount AS original_amount, ROUND((r.refund_amount / p.amount) * 100, 1) AS percent_refunded
 FROM refund r JOIN payment p ON r.payment_id = p.payment_id WHERE r.refund_status = 'REFUNDED';
 
--- 6. Display refunds that are still being processed
+-- Display refunds that are still being processed
 SELECT * FROM refund WHERE refund_status IN ('PENDING', 'APPROVED');
 
--- IT25102967
--- 7. Display invoices that were issued but not yet sent in this month
+-- Display invoices that were issued but not yet sent in this month
 SELECT * FROM invoice WHERE invoice_status = 'ISSUED' AND MONTH(issued_datetime) = MONTH(CURRENT_DATE()) AND YEAR(issued_datetime) = YEAR(CURRENT_DATE());
 
--- 8. Display invoice details with payment details
+-- Display invoice details with payment details
 SELECT i.invoice_id, i.payment_id, i.total_amount, i.invoice_status, i.issued_datetime, p.payment_method, p.payment_status
 FROM invoice i JOIN payment p ON i.payment_id = p.payment_id;
 
--- 9. Calculate the total collected amount, total refunded amount, and the remaining net revenue
+-- Calculate the total collected amount, total refunded amount, and the remaining net revenue
 SELECT (SELECT SUM(amount) FROM payment WHERE payment_status = 'PAID') AS total_collected,
 (SELECT SUM(refund_amount) FROM refund WHERE refund_status = 'REFUNDED') AS total_refunded,
 (SELECT SUM(amount) FROM payment WHERE payment_status = 'PAID') - 
 COALESCE((SELECT SUM(refund_amount) FROM refund WHERE refund_status = 'REFUNDED'), 0) AS net_revenue;
 
--- IT25102954
--- 1. Display all pending inquiries the owner still needs to respond to
+
+-- ====================================================
+-- queries IT25102998 (Pricing and calendar management)
+-- ====================================================
+-- View all calendar block dates with associated room numbers and room types
+SELECT cb.block_id, cb.blocked_date, cb.source, r.room_number, r.room_type, r.room_status
+FROM calendar_block cb
+LEFT JOIN room r ON cb.room_id = r.room_id
+ORDER BY cb.blocked_date ASC;
+
+-- Count unavailable/blocked dates grouped by blocking source
+SELECT source, COUNT(*) AS total_blocked_days
+FROM calendar_block
+GROUP BY source;
+
+-- find rooms currently blocked for a targeted stay date range
+SELECT r.room_id, r.room_number, r.room_type, cb.blocked_date, cb.source
+FROM room r
+JOIN calendar_block cb ON r.room_id = cb.room_id
+WHERE cb.blocked_date BETWEEN '2026-10-01' AND '2026-10-05';
+
+-- Display all active seasonal rate packages and their applicable room details
+SELECT ro.package_name, ro.start_date, ro.end_date, ro.rate_multiplier, ro.min_nights,
+       COALESCE(r.room_number, 'ALL ROOMS') AS applicable_room
+FROM rate_override ro
+LEFT JOIN room r ON ro.room_id = r.room_id
+WHERE ro.is_active = TRUE
+ORDER BY ro.start_date ASC;
+
+-- Calculate effective dynamic room price by applying active rate multipliers to base rates
+SELECT r.room_number, r.room_type, rpt.tier_name, rpt.base_rate,
+       ro.package_name, ro.rate_multiplier,
+       ROUND(rpt.base_rate * ro.rate_multiplier, 2) AS calculated_dynamic_price
+FROM room r
+JOIN room_pricing_tier rpt ON r.room_id = rpt.room_id
+JOIN rate_override ro ON (ro.room_id = r.room_id OR ro.room_id IS NULL)
+WHERE ro.is_active = TRUE;
+
+-- Clean up historical calendar blocks
+DELETE FROM calendar_block 
+WHERE blocked_date < '2026-09-01';
+
+
+-- =============================================
+-- queries IT25102954 (Inquiries and activities)
+-- =============================================
+-- Display all pending inquiries the owner still needs to respond to
 SELECT i.inquiry_id, g.fname, g.lname, i.inquiry_subject, i.message, i.inquiry_date
 FROM inquiry i
 JOIN guest g ON i.guest_id = g.guest_id
 WHERE i.inquiry_status = 'PENDING';
 
--- 2. Count how many inquiries each guest has submitted
+-- Count how many inquiries each guest has submitted
 SELECT g.guest_id, CONCAT(g.fname, ' ', g.lname) AS guest_name, COUNT(i.inquiry_id) AS total_inquiries
 FROM guest g
 JOIN inquiry i ON g.guest_id = i.guest_id
 GROUP BY g.guest_id, g.fname, g.lname;
 
--- 3. Calculate the average rating across all approved reviews
+-- Calculate the average rating across all approved reviews
 SELECT ROUND(AVG(rating), 1) AS average_rating, COUNT(*) AS total_approved_reviews
 FROM review
 WHERE review_status = 'APPROVED';
 
--- 4. Display approved reviews with the guest's name attached
+-- Display approved reviews with the guest's name attached
 SELECT r.review_id, CONCAT(g.fname, ' ', g.lname) AS guest_name, r.rating, r.review_comment, r.review_date
 FROM review r
 JOIN guest g ON r.guest_id = g.guest_id
 WHERE r.review_status = 'APPROVED';
 
--- 5. Display available menu items grouped by meal type
+-- Display available menu items grouped by meal type
 SELECT meal_type, COUNT(*) AS item_count
 FROM menu_showcase
 WHERE is_available = TRUE
 GROUP BY meal_type;
 
--- 6. Display all currently active activities
+-- Display all currently active activities
 SELECT title, activity_description, pricing_note
 FROM activity
 WHERE is_active = TRUE;
 
-USE hotel_reservation_db;
-
--- 1. Add is_active column expected by Room.java
-ALTER TABLE room 
-ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE;
-
--- 2. Add tier_id column expected by Room.java (if not already there)
-ALTER TABLE room 
-ADD COLUMN tier_id INT NULL;
-
--- 3. Link existing rooms to standard pricing tiers
-UPDATE room SET is_active = TRUE, tier_id = 1 WHERE room_id = 1;
-UPDATE room SET is_active = TRUE, tier_id = 2 WHERE room_id = 2;
-
-USE hotel_reservation_db;
-
--- Add base_rate column to match RoomPricingTier.java
-ALTER TABLE room_pricing_tier 
-ADD COLUMN base_rate DECIMAL(10,2) NULL;
-
--- Copy the values over from base_price
-UPDATE room_pricing_tier 
-SET base_rate = base_price 
-WHERE tier_id > 0;
-
-
-
--- Allow calc_room_price_per_night to be NULL or have a default value
-ALTER TABLE reservation_room_selection 
-MODIFY COLUMN calc_room_price_per_night DECIMAL(10,2) NULL DEFAULT 0.00;
