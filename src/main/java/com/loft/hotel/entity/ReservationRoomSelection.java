@@ -27,7 +27,7 @@ public class ReservationRoomSelection {
 
     // Price is copied from the room's tier at the time of booking, so a later
     // price change doesn't alter what a guest already agreed to pay.
-    @Column(name = "room_price_per_night", nullable = false)
+    @Column(name = "calc_room_price_per_night", nullable = false)
     private BigDecimal roomPricePerNight;
 
     public ReservationRoomSelection() {
