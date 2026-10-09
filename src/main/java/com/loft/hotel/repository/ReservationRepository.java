@@ -1,64 +1,26 @@
 package com.loft.hotel.repository;
 
 import com.loft.hotel.entity.Reservation;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
-// In-memory storage for reservations.
-// Data will be cleared when the Spring Boot application is restarted (no database yet).
-@Repository
-public class ReservationRepository {
+public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
 
-    private final Map<Long, Reservation> store = new LinkedHashMap<>();
-    private final AtomicLong idCounter = new AtomicLong(1);
-
-    public Reservation save(Reservation reservation) {
-
-        // Only assign a new ID the first time this reservation is saved.
-        // If it already has one, this is an update (e.g. confirm/cancel), so keep it.
-        if (reservation.getId() == null) {
-            reservation.setId(idCounter.getAndIncrement());
-        }
-
-        store.put(reservation.getId(), reservation);
-
-        return reservation;
-    }
-
-    public Optional<Reservation> findById(Long id) {
-        return Optional.ofNullable(store.get(id));
-    }
-
-    public List<Reservation> findAll() {
-        return new ArrayList<>(store.values());
-    }
-
-    // True if an existing (non-cancelled) reservation overlaps the given date range.
-    // CANCELLED reservations are ignored so their dates become bookable again.
-    public boolean hasOverlap(LocalDateRange range) {
-
-        return store.values().stream().anyMatch(reservation ->
-
-                !"CANCELLED".equals(reservation.getStatus())
-
-                        && reservation.getCheckInDate()
-                        .isBefore(range.checkOut())
-
-                        && reservation.getCheckOutDate()
-                        .isAfter(range.checkIn())
-        );
-    }
-
-    public record LocalDateRange(
-            LocalDate checkIn,
-            LocalDate checkOut
-    ) {
-    }
+    // Finds reservations for a specific room that overlap the given date range
+    // and are NOT cancelled - used to check availability before booking.
+    @Query("""
+        select r from Reservation r
+        join ReservationRoomSelection s on s.reservation = r
+        where s.room.roomId = :roomId
+          and r.reservationStatus <> com.loft.hotel.entity.ReservationStatus.CANCELLED
+          and r.checkInDate < :checkOut
+          and r.checkOutDate > :checkIn
+        """)
+    List<Reservation> findOverlappingForRoom(@Param("roomId") Integer roomId,
+                                             @Param("checkIn") LocalDate checkIn,
+                                             @Param("checkOut") LocalDate checkOut);
 }
