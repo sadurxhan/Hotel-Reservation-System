@@ -1,5 +1,6 @@
 package com.loft.hotel.controller;
 
+import com.loft.hotel.dto.BookingRequest;
 import com.loft.hotel.entity.Reservation;
 import com.loft.hotel.service.ReservationService;
 import org.springframework.http.HttpStatus;
@@ -19,126 +20,62 @@ public class ReservationController {
         this.reservationService = reservationService;
     }
 
-    // Create a new reservation
     // POST /api/reservations
     @PostMapping
-    public ResponseEntity<?> createReservation(
-            @RequestBody Reservation reservation) {
-
+    public ResponseEntity<?> createReservation(@RequestBody BookingRequest request) {
         try {
-            // Validate and save the reservation
-            Reservation created =
-                    reservationService.createReservation(reservation);
-
-            // Return the created reservation
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(created);
-
+            Reservation created = reservationService.createReservation(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (IllegalArgumentException e) {
-            // Return 400 when the booking information is invalid
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            // Return 500 when an unexpected error occurs
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            "An unexpected error occurred while processing your booking."
-                    );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred while processing your booking.");
         }
     }
 
-    // Get all reservations
     // GET /api/reservations
     @GetMapping
     public ResponseEntity<?> getAllReservations() {
-
-        return ResponseEntity.ok(
-                reservationService.getAll()
-        );
+        return ResponseEntity.ok(reservationService.getAll());
     }
 
-    // Get one reservation by ID
     // GET /api/reservations/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<?> getReservationById(
-            @PathVariable Long id) {
-
+    public ResponseEntity<?> getReservationById(@PathVariable Integer id) {
         try {
-            // Find the reservation using its ID
-            Reservation reservation =
-                    reservationService.getById(id);
-
-            return ResponseEntity.ok(reservation);
-
+            return ResponseEntity.ok(reservationService.getById(id));
         } catch (Exception e) {
-            // Return 404 when the reservation is not found
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    // Check whether the selected dates are available
-    // GET /api/reservations/availability
+    // GET /api/reservations/availability?roomId=1&checkIn=2027-01-01&checkOut=2027-01-03
     @GetMapping("/availability")
-    public ResponseEntity<?> checkAvailability(
-            @RequestParam LocalDate checkIn,
-            @RequestParam LocalDate checkOut) {
-
-        // Check availability through the service
-        boolean available =
-                reservationService.isAvailable(
-                        checkIn,
-                        checkOut
-                );
-
+    public ResponseEntity<?> checkAvailability(@RequestParam Integer roomId,
+                                               @RequestParam LocalDate checkIn,
+                                               @RequestParam LocalDate checkOut) {
+        boolean available = reservationService.isRoomAvailable(roomId, checkIn, checkOut);
         return ResponseEntity.ok(available);
     }
 
-    // Confirm a pending reservation
     // PUT /api/reservations/{id}/confirm
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<?> confirmReservation(
-            @PathVariable Long id) {
-
+    public ResponseEntity<?> confirmReservation(@PathVariable Integer id) {
         try {
-            // Change the reservation status to CONFIRMED
-            Reservation confirmed =
-                    reservationService.confirm(id);
-
-            return ResponseEntity.ok(confirmed);
-
+            return ResponseEntity.ok(reservationService.confirm(id));
         } catch (Exception e) {
-            // Return an error when confirmation fails
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
-    // Cancel a reservation
     // PUT /api/reservations/{id}/cancel
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelReservation(
-            @PathVariable Long id) {
-
+    public ResponseEntity<?> cancelReservation(@PathVariable Integer id) {
         try {
-            // Change the reservation status to CANCELLED
-            Reservation cancelled =
-                    reservationService.cancel(id);
-
-            return ResponseEntity.ok(cancelled);
-
+            return ResponseEntity.ok(reservationService.cancel(id));
         } catch (Exception e) {
-            // Return an error when cancellation fails
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 }
-
