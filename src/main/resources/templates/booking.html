@@ -45,6 +45,26 @@
             border-radius: 5px;
         }
 
+        input.invalid,
+        select.invalid {
+            border-color: #b85450;
+            background-color: #fff8f8;
+        }
+
+        input.valid,
+        select.valid {
+            border-color: #4caf50;
+        }
+
+        .field-error {
+            display: block;
+            color: #b85450;
+            font-size: 13px;
+            font-weight: normal;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+
         button {
             width: 100%;
             padding: 12px;
@@ -59,12 +79,6 @@
 
         button:hover {
             background-color: #0056b3;
-        }
-
-        #availabilityMessage {
-            margin-top: 15px;
-            font-weight: bold;
-            text-align: center;
         }
 
         #resultMessage {
@@ -95,45 +109,39 @@
 
     <label for="firstName">First Name</label>
     <input type="text" id="firstName" placeholder="Enter your first name" required>
+    <span class="field-error" id="errFirstName"></span>
 
     <label for="lastName">Last Name</label>
     <input type="text" id="lastName" placeholder="Enter your last name" required>
+    <span class="field-error" id="errLastName"></span>
 
     <label for="guestEmail">Guest Email</label>
     <input type="email" id="guestEmail" placeholder="Enter your email" required>
+    <span class="field-error" id="errEmail"></span>
 
     <label for="guestPhone">Phone Number</label>
     <input type="tel" id="guestPhone" placeholder="Enter your phone number" required>
+    <span class="field-error" id="errPhone"></span>
 
     <label for="checkInDate">Check-in Date</label>
     <input type="date" id="checkInDate" required>
+    <span class="field-error" id="errCheckIn"></span>
 
     <label for="checkOutDate">Check-out Date</label>
     <input type="date" id="checkOutDate" required>
+    <span class="field-error" id="errCheckOut"></span>
 
     <label for="roomId">Select Room</label>
-
     <select id="roomId" required>
         <option value="">Select room</option>
         <option value="1">Room 1</option>
         <option value="2">Room 2</option>
     </select>
+    <span class="field-error" id="errRoom"></span>
 
     <label for="numberOfGuests">Number of Guests</label>
-
-    <input
-            type="number"
-            id="numberOfGuests"
-            min="1"
-            value="1"
-            required
-    >
-
-    <button type="button" onclick="checkAvailability()">
-        Check Availability
-    </button>
-
-    <div id="availabilityMessage"></div>
+    <input type="number" id="numberOfGuests" min="1" value="1" required>
+    <span class="field-error" id="errGuests"></span>
 
     <button type="button" onclick="createReservation()">
         Book Now
@@ -146,356 +154,196 @@
 <script>
 
     const API_URL = "/api/reservations";
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phonePattern = /^[0-9+\-\s()]{7,}$/;
 
-
-    // Check room availability
-    async function checkAvailability() {
-
-        const roomId =
-            document.getElementById("roomId").value;
-
-        const checkIn =
-            document.getElementById("checkInDate").value;
-
-        const checkOut =
-            document.getElementById("checkOutDate").value;
-
-        const message =
-            document.getElementById("availabilityMessage");
-
-        message.textContent = "";
-        message.style.color = "";
-
-
-        if (!roomId) {
-
-            message.textContent =
-                "Please select a room.";
-
-            message.style.color = "red";
-
-            return;
-        }
-
-
-        if (!checkIn || !checkOut) {
-
-            message.textContent =
-                "Please select both dates.";
-
-            message.style.color = "red";
-
-            return;
-        }
-
-
-        if (checkOut <= checkIn) {
-
-            message.textContent =
-                "Check-out date must be after check-in date.";
-
-            message.style.color = "red";
-
-            return;
-        }
-
-
-        const url =
-            `${API_URL}/availability?roomId=${encodeURIComponent(roomId)}&checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`;
-
-
-        console.log(
-            "Checking availability:",
-            url
-        );
-
-
-        try {
-
-            const response =
-                await fetch(url);
-
-
-            const responseText =
-                await response.text();
-
-
-            console.log(
-                "Availability status:",
-                response.status
-            );
-
-            console.log(
-                "Availability response:",
-                responseText
-            );
-
-
-            if (!response.ok) {
-
-                message.textContent =
-                    responseText ||
-                    "Unable to check availability.";
-
-                message.style.color =
-                    "red";
-
-                return;
-            }
-
-
-            const available =
-                responseText.trim() === "true";
-
-
-            if (available) {
-
-                message.textContent =
-                    "Room is available for these dates.";
-
-                message.style.color =
-                    "green";
-
-            } else {
-
-                message.textContent =
-                    "This room is already booked for these dates.";
-
-                message.style.color =
-                    "red";
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "Availability error:",
-                error
-            );
-
-
-            message.textContent =
-                "Unable to connect to the reservation server.";
-
-            message.style.color =
-                "red";
-        }
+    function setInvalid(inputId, errorId, message) {
+        document.getElementById(inputId).classList.remove("valid");
+        document.getElementById(inputId).classList.add("invalid");
+        document.getElementById(errorId).textContent = message;
     }
 
+    function setValid(inputId, errorId) {
+        document.getElementById(inputId).classList.remove("invalid");
+        document.getElementById(inputId).classList.add("valid");
+        document.getElementById(errorId).textContent = "";
+    }
 
-    // Create booking
+    function validateFirstName() {
+        const v = document.getElementById("firstName").value.trim();
+        if (!v) { setInvalid("firstName", "errFirstName", "First name is required."); return false; }
+        setValid("firstName", "errFirstName");
+        return true;
+    }
+
+    function validateLastName() {
+        const v = document.getElementById("lastName").value.trim();
+        if (!v) { setInvalid("lastName", "errLastName", "Last name is required."); return false; }
+        setValid("lastName", "errLastName");
+        return true;
+    }
+
+    function validateEmail() {
+        const v = document.getElementById("guestEmail").value.trim();
+        if (!v) { setInvalid("guestEmail", "errEmail", "Email is required."); return false; }
+        if (!emailPattern.test(v)) { setInvalid("guestEmail", "errEmail", "Please enter a valid email address."); return false; }
+        setValid("guestEmail", "errEmail");
+        return true;
+    }
+
+    function validatePhone() {
+        const v = document.getElementById("guestPhone").value.trim();
+        if (!v) { setInvalid("guestPhone", "errPhone", "Phone number is required."); return false; }
+        if (!phonePattern.test(v)) { setInvalid("guestPhone", "errPhone", "Please enter a valid phone number."); return false; }
+        setValid("guestPhone", "errPhone");
+        return true;
+    }
+
+    function validateCheckIn() {
+        const v = document.getElementById("checkInDate").value;
+        const today = new Date().toISOString().split("T")[0];
+        if (!v) { setInvalid("checkInDate", "errCheckIn", "Check-in date is required."); return false; }
+        if (v < today) { setInvalid("checkInDate", "errCheckIn", "Check-in date cannot be in the past."); return false; }
+        setValid("checkInDate", "errCheckIn");
+        return true;
+    }
+
+    function validateCheckOut() {
+        const checkIn = document.getElementById("checkInDate").value;
+        const v = document.getElementById("checkOutDate").value;
+        if (!v) { setInvalid("checkOutDate", "errCheckOut", "Check-out date is required."); return false; }
+        if (checkIn && v <= checkIn) { setInvalid("checkOutDate", "errCheckOut", "Must be after check-in date."); return false; }
+        setValid("checkOutDate", "errCheckOut");
+        return true;
+    }
+
+    function validateRoom() {
+        const v = document.getElementById("roomId").value;
+        if (!v) { setInvalid("roomId", "errRoom", "Please select a room."); return false; }
+        setValid("roomId", "errRoom");
+        return true;
+    }
+
+    function validateGuests() {
+        const v = document.getElementById("numberOfGuests").value;
+        if (!v || parseInt(v) < 1) { setInvalid("numberOfGuests", "errGuests", "Must be at least 1."); return false; }
+        setValid("numberOfGuests", "errGuests");
+        return true;
+    }
+
+    function validateForm() {
+        const results = [
+            validateFirstName(),
+            validateLastName(),
+            validateEmail(),
+            validatePhone(),
+            validateCheckIn(),
+            validateCheckOut(),
+            validateRoom(),
+            validateGuests()
+        ];
+        return results.every(r => r === true);
+    }
+
+    document.getElementById("firstName").addEventListener("blur", validateFirstName);
+    document.getElementById("lastName").addEventListener("blur", validateLastName);
+    document.getElementById("guestEmail").addEventListener("blur", validateEmail);
+    document.getElementById("guestPhone").addEventListener("blur", validatePhone);
+    document.getElementById("checkInDate").addEventListener("change", validateCheckIn);
+    document.getElementById("checkOutDate").addEventListener("change", validateCheckOut);
+    document.getElementById("roomId").addEventListener("change", validateRoom);
+    document.getElementById("numberOfGuests").addEventListener("change", validateGuests);
+
+
     async function createReservation() {
 
-        const firstName =
-            document.getElementById("firstName")
-                .value.trim();
-
-        const lastName =
-            document.getElementById("lastName")
-                .value.trim();
-
-        const guestEmail =
-            document.getElementById("guestEmail")
-                .value.trim();
-
-        const guestPhone =
-            document.getElementById("guestPhone")
-                .value.trim();
-
-        const checkIn =
-            document.getElementById("checkInDate")
-                .value;
-
-        const checkOut =
-            document.getElementById("checkOutDate")
-                .value;
-
-        const roomId =
-            document.getElementById("roomId")
-                .value;
-
-        const numberOfGuests =
-            document.getElementById("numberOfGuests")
-                .value;
-
-        const resultMessage =
-            document.getElementById("resultMessage");
-
-
+        const resultMessage = document.getElementById("resultMessage");
         resultMessage.textContent = "";
         resultMessage.className = "";
 
-
-        if (
-            !firstName ||
-            !lastName ||
-            !guestEmail ||
-            !guestPhone ||
-            !checkIn ||
-            !checkOut ||
-            !roomId ||
-            !numberOfGuests
-        ) {
-
-            resultMessage.textContent =
-                "Please fill in all fields.";
-
-            resultMessage.className =
-                "error";
-
+        if (!validateForm()) {
+            resultMessage.textContent = "Please fix the errors above before booking.";
+            resultMessage.className = "error";
             return;
         }
 
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const guestEmail = document.getElementById("guestEmail").value.trim();
+        const guestPhone = document.getElementById("guestPhone").value.trim();
+        const checkIn = document.getElementById("checkInDate").value;
+        const checkOut = document.getElementById("checkOutDate").value;
+        const roomId = document.getElementById("roomId").value;
+        const numberOfGuests = document.getElementById("numberOfGuests").value;
 
-        if (checkOut <= checkIn) {
-
-            resultMessage.textContent =
-                "Check-out date must be after check-in date.";
-
-            resultMessage.className =
-                "error";
-
-            return;
-        }
-
-
-        if (parseInt(numberOfGuests) < 1) {
-
-            resultMessage.textContent =
-                "Number of guests must be at least 1.";
-
-            resultMessage.className =
-                "error";
-
-            return;
-        }
-
-
-        const guestName =
-            firstName + " " + lastName;
-
-
-        const bookingData = {
-
-            guestName: guestName,
-
-            guestEmail: guestEmail,
-
-            guestPhone: guestPhone,
-
-            checkInDate: checkIn,
-
-            checkOutDate: checkOut,
-
-            roomId: parseInt(roomId),
-
-            numberOfGuests:
-                parseInt(numberOfGuests)
-        };
-
-
-        console.log(
-            "Sending booking:",
-            bookingData
-        );
-
+        const availabilityUrl =
+            `${API_URL}/availability?roomId=${encodeURIComponent(roomId)}&checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`;
 
         try {
 
-            const response =
-                await fetch(
-                    API_URL,
-                    {
-                        method: "POST",
+            resultMessage.textContent = "Checking room availability...";
+            resultMessage.className = "";
 
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
+            const availabilityResponse = await fetch(availabilityUrl);
+            const availabilityText = await availabilityResponse.text();
 
-                        body:
-                            JSON.stringify(
-                                bookingData
-                            )
-                    }
-                );
+            if (!availabilityResponse.ok) {
+                resultMessage.textContent = availabilityText || "Unable to check room availability.";
+                resultMessage.className = "error";
+                return;
+            }
 
+            const available = availabilityText.trim() === "true";
 
-            const contentType =
-                response.headers.get(
-                    "content-type"
-                );
+            if (!available) {
+                resultMessage.textContent = "That room is currently unavailable.";
+                resultMessage.className = "error";
+                return;
+            }
 
+            const guestName = firstName + " " + lastName;
 
+            const bookingData = {
+                guestName: guestName,
+                guestEmail: guestEmail,
+                guestPhone: guestPhone,
+                checkInDate: checkIn,
+                checkOutDate: checkOut,
+                roomId: parseInt(roomId),
+                numberOfGuests: parseInt(numberOfGuests)
+            };
+
+            resultMessage.textContent = "Room is available. Creating your booking...";
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bookingData)
+            });
+
+            const contentType = response.headers.get("content-type");
             let data;
 
-
-            if (
-                contentType &&
-                contentType.includes(
-                    "application/json"
-                )
-            ) {
-
-                data =
-                    await response.json();
-
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
             } else {
-
-                data =
-                    await response.text();
+                data = await response.text();
             }
-
-
-            console.log(
-                "Server response:",
-                data
-            );
-
 
             if (response.ok) {
-
                 resultMessage.textContent =
-                    "Booking successful! " +
-                    "Reservation ID: " +
-                    data.reservationId +
-                    " | Status: " +
-                    data.reservationStatus;
-
-                resultMessage.className =
-                    "success";
-
-
-                document.getElementById(
-                    "availabilityMessage"
-                ).textContent = "";
-
-
+                    "Booking successful! Reservation ID: " + data.reservationId +
+                    " | Status: " + data.reservationStatus;
+                resultMessage.className = "success";
             } else {
-
-                resultMessage.textContent =
-                    typeof data === "string"
-                        ? data
-                        : "Booking failed.";
-
-                resultMessage.className =
-                    "error";
+                resultMessage.textContent = typeof data === "string" ? data : "Booking failed.";
+                resultMessage.className = "error";
             }
 
-
         } catch (error) {
-
-            console.error(
-                "Booking error:",
-                error
-            );
-
-
-            resultMessage.textContent =
-                "Unable to connect to the hotel reservation server.";
-
-            resultMessage.className =
-                "error";
+            console.error("Booking error:", error);
+            resultMessage.textContent = "Unable to connect to the hotel reservation server.";
+            resultMessage.className = "error";
         }
     }
 
