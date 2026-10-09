@@ -153,7 +153,11 @@
 
 <script>
 
-    const API_URL = "/api/reservations";
+    // FIX: if the page is served by Spring on port 8081, use a relative URL.
+    // Otherwise (file:// or Live Server), point to the backend explicitly.
+    const BACKEND_URL = (window.location.port === "8081") ? "" : "http://localhost:8081";
+    const API_URL = BACKEND_URL + "/api/reservations";
+
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phonePattern = /^[0-9+\-\s()]{7,}$/;
 
@@ -342,7 +346,7 @@
 
         } catch (error) {
             console.error("Booking error:", error);
-            resultMessage.textContent = "Unable to connect to the hotel reservation server.";
+            resultMessage.textContent = "Unable to connect to the hotel reservation server. Make sure the Spring Boot app is running on " + (BACKEND_URL || window.location.origin) + ".";
             resultMessage.className = "error";
         }
     }
