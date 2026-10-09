@@ -1,176 +1,413 @@
 package com.loft.hotel.service;
 
+import com.loft.hotel.dto.BookingRequest;
+import com.loft.hotel.entity.Guest;
 import com.loft.hotel.entity.Reservation;
+import com.loft.hotel.entity.ReservationRoomSelection;
+import com.loft.hotel.entity.ReservationStatus;
+import com.loft.hotel.entity.Room;
+import com.loft.hotel.repository.GuestRepository;
 import com.loft.hotel.repository.ReservationRepository;
+import com.loft.hotel.repository.ReservationRoomSelectionRepository;
+import com.loft.hotel.repository.RoomRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
 public class ReservationService {
 
-    private final ReservationRepository repository;
+    private final ReservationRepository reservationRepository;
+    private final ReservationRoomSelectionRepository selectionRepository;
+    private final GuestRepository guestRepository;
+    private final RoomRepository roomRepository;
 
-    public ReservationService(ReservationRepository repository) {
-        this.repository = repository;
+    public ReservationService(
+            ReservationRepository reservationRepository,
+            ReservationRoomSelectionRepository selectionRepository,
+            GuestRepository guestRepository,
+            RoomRepository roomRepository) {
+
+        this.reservationRepository = reservationRepository;
+        this.selectionRepository = selectionRepository;
+        this.guestRepository = guestRepository;
+        this.roomRepository = roomRepository;
     }
 
-    // Check whether the requested dates are available
-    public boolean isAvailable(LocalDate checkIn, LocalDate checkOut) {
+    // --------------------------------------------------
+    // CHECK ROOM AVAILABILITY
+    // --------------------------------------------------
 
-        // Dates must not be empty
-        if (checkIn == null || checkOut == null) {
+    public boolean isRoomAvailable(
+            Integer roomId,
+            LocalDate checkIn,
+            LocalDate checkOut) {
+
+        if (roomId == null ||
+                checkIn == null ||
+                checkOut == null) {
+
             return false;
         }
 
-        // Check-out date must be after check-in date
         if (!checkOut.isAfter(checkIn)) {
             return false;
         }
 
-        // Return false if another reservation overlaps these dates
-        return !repository.hasOverlap(
-                new ReservationRepository.LocalDateRange(
+        List<Reservation> overlaps =
+                reservationRepository.findOverlappingForRoom(
+                        roomId,
                         checkIn,
                         checkOut
-                )
-        );
+                );
+
+        return overlaps.isEmpty();
     }
 
-    // Create a new reservation
-    // The reservation starts with PENDING status
-    public synchronized Reservation createReservation(Reservation reservation) {
+    // --------------------------------------------------
+    // CREATE RESERVATION
+    // --------------------------------------------------
 
-        // Validate guest name
-        if (reservation.getGuestName() == null
-                || reservation.getGuestName().isBlank()) {
+    @Transactional
+    public synchronized Reservation createReservation(
+            BookingRequest request) {
 
+        // -----------------------------
+        // 0. Request Validation
+        // -----------------------------
+
+        if (request == null) {
             throw new IllegalArgumentException(
-                    "Guest name is required."
-            );
+                    "Booking request cannot be empty.");
         }
 
-        // Validate guest email
-        if (reservation.getGuestEmail() == null
-                || reservation.getGuestEmail().isBlank()) {
+        // -----------------------------
+        // 1. Guest Name Validation
+        // -----------------------------
+
+        if (request.getGuestName() == null ||
+                request.getGuestName().isBlank()) {
 
             throw new IllegalArgumentException(
-                    "Guest email is required."
-            );
+                    "Guest name is required.");
         }
 
-        // Validate guest phone number
-        if (reservation.getGuestPhone() == null
-                || reservation.getGuestPhone().isBlank()) {
+        // -----------------------------
+        // 2. Email Validation
+        // -----------------------------
+
+        if (request.getGuestEmail() == null ||
+                request.getGuestEmail().isBlank()) {
 
             throw new IllegalArgumentException(
-                    "Guest phone number is required."
-            );
+                    "Guest email is required.");
         }
 
-        // Validate room type
-        if (reservation.getRoomType() == null
-                || reservation.getRoomType().isBlank()) {
+        if (!request.getGuestEmail().matches(
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
 
             throw new IllegalArgumentException(
-                    "Room type is required.");
+                    "Please enter a valid email address.");
         }
 
-        // Validate check-in and check-out dates
-        if (reservation.getCheckInDate() == null
-                || reservation.getCheckOutDate() == null) {
+        // -----------------------------
+        // 3. Phone Number Validation
+        // -----------------------------
+
+        if (request.getGuestPhone() == null ||
+                request.getGuestPhone().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Guest phone number is required.");
+        }
+
+        if (!request.getGuestPhone().matches(
+                "^\\+?[0-9]{10,15}$")) {
+
+            throw new IllegalArgumentException(
+                    "Please enter a valid phone number (10-15 digits).");
+        }
+
+        // -----------------------------
+        // 4. Room Selection Validation
+        // -----------------------------
+
+        if (request.getRoomId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Please choose a room.");
+        }
+
+        // -----------------------------
+        // 5. Date Validation
+        // -----------------------------
+
+        if (request.getCheckInDate() == null ||
+                request.getCheckOutDate() == null) {
 
             throw new IllegalArgumentException(
                     "Please choose both check-in and check-out dates.");
         }
 
-        // Check-in date cannot be in the past
-        if (reservation.getCheckInDate().isBefore(LocalDate.now())) {
+        if (request.getCheckInDate().isBefore(LocalDate.now())) {
 
             throw new IllegalArgumentException(
                     "Check-in date cannot be in the past.");
         }
 
-        // Check-out date must be after check-in date
-        if (!reservation.getCheckOutDate()
-                .isAfter(reservation.getCheckInDate())) {
+        if (!request.getCheckOutDate()
+                .isAfter(request.getCheckInDate())) {
 
             throw new IllegalArgumentException(
                     "Check-out date must be after check-in date.");
         }
 
-        // Check whether the selected dates are already booked
-        if (!isAvailable(
-                reservation.getCheckInDate(),
-                reservation.getCheckOutDate())) {
+        // -----------------------------
+        // 6. Number of Guests Validation
+        // -----------------------------
+
+        if (request.getNumberOfGuests() == null ||
+                request.getNumberOfGuests() < 1) {
 
             throw new IllegalArgumentException(
-                    "Those dates are already booked. Please choose different dates.");
+                    "Number of guests must be at least 1.");
         }
 
-        // New reservations start with PENDING status
-        reservation.setStatus("PENDING");
+        // -----------------------------
+        // 7. Find Room
+        // -----------------------------
 
-        // Save the reservation
-        return repository.save(reservation);
+        Room room = roomRepository
+                .findById(request.getRoomId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "That room does not exist."));
+
+        // -----------------------------
+        // 8. Check Room Is Active
+        // -----------------------------
+
+        if (room.getIsActive() != null &&
+                !room.getIsActive()) {
+
+            throw new IllegalArgumentException(
+                    "That room is currently unavailable.");
+        }
+
+        // -----------------------------
+        // 9. Check Room Availability
+        // -----------------------------
+
+        if (!isRoomAvailable(
+                room.getRoomId(),
+                request.getCheckInDate(),
+                request.getCheckOutDate())) {
+
+            throw new IllegalArgumentException(
+                    "Room " + room.getRoomNumber()
+                            + " is already booked for those dates.");
+        }
+
+        // -----------------------------
+        // 10. Find or Create Guest
+        // -----------------------------
+
+        Guest guest = guestRepository
+                .findByEmail(request.getGuestEmail())
+                .orElseGet(() -> {
+
+                    Guest g = new Guest();
+
+                    String[] parts = request.getGuestName()
+                            .trim()
+                            .split("\\s+", 2);
+
+                    g.setFname(parts[0]);
+
+                    g.setLname(
+                            parts.length > 1
+                                    ? parts[1]
+                                    : ""
+                    );
+
+                    g.setEmail(request.getGuestEmail());
+
+                    g.setPhoneNo(request.getGuestPhone());
+
+                    return guestRepository.save(g);
+                });
+
+        // -----------------------------
+        // 11. Calculate Number of Nights
+        // -----------------------------
+
+        long nights = ChronoUnit.DAYS.between(
+                request.getCheckInDate(),
+                request.getCheckOutDate()
+        );
+
+        // -----------------------------
+        // 12. Get Room Price
+        // -----------------------------
+
+        BigDecimal pricePerNight =
+                room.getTier().getBaseRate();
+
+        // -----------------------------
+        // 13. Calculate Total Amount
+        // -----------------------------
+
+        BigDecimal totalAmount =
+                pricePerNight.multiply(
+                        BigDecimal.valueOf(nights)
+                );
+
+        // -----------------------------
+        // 14. Create Reservation
+        // -----------------------------
+
+        Reservation reservation =
+                new Reservation();
+
+        reservation.setGuest(guest);
+
+        reservation.setCheckInDate(
+                request.getCheckInDate()
+        );
+
+        reservation.setCheckOutDate(
+                request.getCheckOutDate()
+        );
+
+        reservation.setNumberOfGuests(
+                request.getNumberOfGuests()
+        );
+
+        reservation.setTotalAmount(
+                totalAmount
+        );
+
+        reservation.setReservationStatus(
+                ReservationStatus.PENDING
+        );
+
+        // -----------------------------
+        // 15. Save Reservation
+        // -----------------------------
+
+        reservation =
+                reservationRepository.save(reservation);
+
+        // -----------------------------
+        // 16. Create Room Selection
+        // -----------------------------
+
+        ReservationRoomSelection selection =
+                new ReservationRoomSelection();
+
+        selection.setReservation(reservation);
+
+        selection.setRoom(room);
+
+        selection.setNoOfGuests(
+                reservation.getNumberOfGuests()
+        );
+
+        selection.setRoomPricePerNight(
+                pricePerNight
+        );
+
+        // -----------------------------
+        // 17. Save Room Selection
+        // -----------------------------
+
+        selectionRepository.save(selection);
+
+        // -----------------------------
+        // 18. Return Reservation
+        // -----------------------------
+
+        return reservation;
     }
 
-    // Get a reservation by its ID
-    public Reservation getById(Long id) {
+    // --------------------------------------------------
+    // GET RESERVATION BY ID
+    // --------------------------------------------------
 
-        return repository.findById(id)
+    public Reservation getById(Integer id) {
+
+        return reservationRepository
+                .findById(id)
                 .orElseThrow(() ->
                         new NoSuchElementException(
-                                "Reservation " + id + " not found"
-                        )
-                );
+                                "Reservation "
+                                        + id
+                                        + " not found"));
     }
 
-    // Get all reservations
+    // --------------------------------------------------
+    // GET ALL RESERVATIONS
+    // --------------------------------------------------
+
     public List<Reservation> getAll() {
-        return repository.findAll();
+
+        return reservationRepository.findAll();
     }
 
-    // Confirm a PENDING reservation
-    public Reservation confirm(Long id) {
+    // --------------------------------------------------
+    // CONFIRM RESERVATION
+    // --------------------------------------------------
 
-        // Find the reservation
-        Reservation reservation = getById(id);
+    @Transactional
+    public Reservation confirm(Integer id) {
 
-        // Only PENDING reservations can be confirmed
-        if (!"PENDING".equals(reservation.getStatus())) {
+        Reservation reservation =
+                getById(id);
+
+        if (reservation.getReservationStatus()
+                != ReservationStatus.PENDING) {
 
             throw new IllegalStateException(
                     "Only PENDING reservations can be confirmed.");
         }
 
-        // Change status to CONFIRMED
-        reservation.setStatus("CONFIRMED");
+        reservation.setReservationStatus(
+                ReservationStatus.CONFIRMED
+        );
 
-        // Save the updated reservation
-        return repository.save(reservation);
+        return reservationRepository.save(
+                reservation
+        );
     }
 
-    // Cancel a reservation
-    public Reservation cancel(Long id) {
+    // --------------------------------------------------
+    // CANCEL RESERVATION
+    // --------------------------------------------------
 
-        // Find the reservation
-        Reservation reservation = getById(id);
+    @Transactional
+    public Reservation cancel(Integer id) {
 
-        // Prevent cancelling an already cancelled reservation
-        if ("CANCELLED".equals(reservation.getStatus())) {
+        Reservation reservation =
+                getById(id);
+
+        if (reservation.getReservationStatus()
+                == ReservationStatus.CANCELLED) {
 
             throw new IllegalStateException(
                     "Reservation is already cancelled.");
         }
 
-        // Change status to CANCELLED
-        reservation.setStatus("CANCELLED");
+        reservation.setReservationStatus(
+                ReservationStatus.CANCELLED
+        );
 
-        // Save the updated reservation
-        return repository.save(reservation);
+        return reservationRepository.save(
+                reservation
+        );
     }
 }
-
