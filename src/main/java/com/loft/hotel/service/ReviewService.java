@@ -2,11 +2,8 @@ package com.loft.hotel.service;
 
 import com.loft.hotel.model.Review;
 import com.loft.hotel.repository.ReviewRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,76 +11,67 @@ import java.util.List;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final GuestLookupService guestLookupService;
 
-    @Autowired
-    public ReviewService(ReviewRepository reviewRepository, JdbcTemplate jdbcTemplate) {
+    public ReviewService(ReviewRepository reviewRepository,
+                         GuestLookupService guestLookupService) {
         this.reviewRepository = reviewRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.guestLookupService = guestLookupService;
     }
 
-    private Integer findOrCreateGuest(String fname, String lname, String email, String phoneNo) {
-        // Same lookup-or-create pattern as InquiryService.
-        List<Integer> existing = jdbcTemplate.queryForList(
-                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
-        );
-        if (!existing.isEmpty()) {
-            return existing.get(0);
-        }
-
-        jdbcTemplate.update(connection -> {
-            var ps = connection.prepareStatement(
-                    "INSERT INTO guest (fname, lname, email, phone_no) VALUES (?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS
-            );
-            ps.setString(1, fname);
-            ps.setString(2, lname);
-            ps.setString(3, email);
-            ps.setString(4, phoneNo);
-            return ps;
-        });
-
-        return jdbcTemplate.queryForObject(
-                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
-        );
-    }
+    // ---------- Guest side ----------
 
     public Review submitReview(String fullName, String email, String phoneNo,
                                Integer rating, String comment) {
-        String[] nameParts = fullName.trim().split(" ", 2);
-        String fname = nameParts[0];
-        String lname = nameParts.length > 1 ? nameParts[1] : "";
 
-        Integer guestId = findOrCreateGuest(fname, lname, email, phoneNo);
+        if (isBlank(fullName) || isBlank(email) || isBlank(phoneNo)) {
+            throw new IllegalArgumentException("Name, email and phone are required");
+        }
+        // The database also enforces this (chk_review_rating), but checking here
+        // lets us give a friendly message instead of a database error
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
+
+        Integer guestId = guestLookupService.findOrCreateGuest(fullName, email, phoneNo);
 
         Review review = new Review();
         review.setGuestId(guestId);
         review.setRating(rating);
         review.setReviewComment(comment);
         review.setReviewDate(LocalDateTime.now());
-        review.setReviewStatus("PENDING");
-        // Every new review starts PENDING until an admin approves it.
-
+        review.setReviewStatus("PENDING");     // hidden from the public until an admin approves it
         return reviewRepository.save(review);
     }
 
-    public List<Review> getAllReviews() {
-        // Admin side — sees everything, including PENDING.
-        return reviewRepository.findAll();
+    // public Reviews page: only APPROVED ones
+    public List<Review> getApprovedReviews() {
+        return reviewRepository.findByReviewStatusOrderByReviewDateDesc("APPROVED");
     }
 
-    public List<Review> getApprovedReviews() {
-        // Public side — guests only see APPROVED reviews.
-        return reviewRepository.findAll().stream()
-                .filter(r -> "APPROVED".equals(r.getReviewStatus()))
-                .toList();
+    // ---------- Admin side ----------
+
+    public List<Review> getAllReviews() {
+        return reviewRepository.findAllByOrderByReviewDateDesc();
+    }
+
+    // the moderation queue
+    public List<Review> getPendingReviews() {
+        return reviewRepository.findByReviewStatusOrderByReviewDateDesc("PENDING");
     }
 
     public Review moderateReview(Integer reviewId, String newStatus) {
-        // newStatus will be "APPROVED" or "REJECTED"
+        String status = newStatus.toUpperCase();
+        if (!status.equals("APPROVED") && !status.equals("REJECTED")) {
+            throw new IllegalArgumentException("Status must be APPROVED or REJECTED");
+        }
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
-        review.setReviewStatus(newStatus);
+        review.setReviewStatus(status);
         return reviewRepository.save(review);
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

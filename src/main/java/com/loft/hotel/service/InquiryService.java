@@ -2,86 +2,119 @@ package com.loft.hotel.service;
 
 import com.loft.hotel.model.Inquiry;
 import com.loft.hotel.repository.InquiryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class InquiryService {
 
+    private static final Logger log = LoggerFactory.getLogger(InquiryService.class);
+
     private final InquiryRepository inquiryRepository;
-    private final JdbcTemplate jdbcTemplate;
-    // JdbcTemplate lets us run raw SQL directly, without needing a
-    // Guest.java entity class — just what we need for this workaround.
+    private final GuestLookupService guestLookupService;
+    private final JavaMailSender mailSender;
 
-    @Autowired
-    public InquiryService(InquiryRepository inquiryRepository, JdbcTemplate jdbcTemplate) {
+    // @Value reads a setting from application.properties (the text after ":" is the default)
+    @Value("${app.owner.email:}")
+    private String ownerEmail;
+
+    @Value("${spring.mail.username:}")
+    private String fromEmail;
+
+    public InquiryService(InquiryRepository inquiryRepository,
+                          GuestLookupService guestLookupService,
+                          JavaMailSender mailSender) {
         this.inquiryRepository = inquiryRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.guestLookupService = guestLookupService;
+        this.mailSender = mailSender;
     }
 
-    private Integer findOrCreateGuest(String fname, String lname, String email, String phoneNo) {
-        // Step 1: check if a guest with this email already exists.
-        List<Integer> existing = jdbcTemplate.queryForList(
-                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
-        );
-
-        if (!existing.isEmpty()) {
-            return existing.get(0);
-            // Guest already exists — reuse their ID, don't create a duplicate.
-        }
-
-        // Step 2: no match found — insert a new guest row.
-        java.sql.PreparedStatement[] ps = new java.sql.PreparedStatement[1];
-        jdbcTemplate.update(connection -> {
-            ps[0] = connection.prepareStatement(
-                    "INSERT INTO guest (fname, lname, email, phone_no) VALUES (?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS
-            );
-            ps[0].setString(1, fname);
-            ps[0].setString(2, lname);
-            ps[0].setString(3, email);
-            ps[0].setString(4, phoneNo);
-            return ps[0];
-        });
-
-        // Grab the auto-generated ID of the guest we just inserted.
-        return jdbcTemplate.queryForObject(
-                "SELECT guest_id FROM guest WHERE email = ?", Integer.class, email
-        );
-    }
+    // ---------- Guest side ----------
 
     public Inquiry submitInquiry(String fullName, String email, String phoneNo,
                                  String subject, String message) {
-        // Split "Full Name" into first/last for the guest table's two columns.
-        String[] nameParts = fullName.trim().split(" ", 2);
-        String fname = nameParts[0];
-        String lname = nameParts.length > 1 ? nameParts[1] : "";
 
-        Integer guestId = findOrCreateGuest(fname, lname, email, phoneNo);
+        // Server-side validation (the browser's "required" check can be bypassed)
+        if (isBlank(fullName) || isBlank(email) || isBlank(phoneNo)
+                || isBlank(subject) || isBlank(message)) {
+            throw new IllegalArgumentException("All fields are required");
+        }
 
+        // 1. find or create the guest
+        Integer guestId = guestLookupService.findOrCreateGuest(fullName, email, phoneNo);
+
+        // 2. build and save the inquiry
         Inquiry inquiry = new Inquiry();
         inquiry.setGuestId(guestId);
         inquiry.setInquirySubject(subject);
         inquiry.setMessage(message);
         inquiry.setInquiryDate(LocalDateTime.now());
         inquiry.setInquiryStatus("PENDING");
+        Inquiry saved = inquiryRepository.save(inquiry);
 
-        return inquiryRepository.save(inquiry);
+        // 3. tell the owner (never allowed to break the submission itself)
+        notifyOwner(saved, fullName, email, phoneNo);
+
+        return saved;
     }
 
+    // ---------- Admin side ----------
+
     public List<Inquiry> getAllInquiries() {
-        return inquiryRepository.findAll();
+        return inquiryRepository.findAllByOrderByInquiryDateDesc();
+    }
+
+    public List<Inquiry> getInquiriesByStatus(String status) {
+        return inquiryRepository.findByInquiryStatusOrderByInquiryDateDesc(status.toUpperCase());
     }
 
     public Inquiry updateStatus(Integer inquiryId, String newStatus) {
+        String status = newStatus.toUpperCase();
+        if (!status.equals("PENDING") && !status.equals("RESOLVED")) {
+            throw new IllegalArgumentException("Status must be PENDING or RESOLVED");
+        }
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new RuntimeException("Inquiry not found"));
-        inquiry.setInquiryStatus(newStatus);
+        inquiry.setInquiryStatus(status);
         return inquiryRepository.save(inquiry);
+    }
+
+    // ---------- helpers ----------
+
+    private void notifyOwner(Inquiry inquiry, String fullName, String email, String phoneNo) {
+        if (isBlank(ownerEmail)) {
+            log.info("Owner email not configured - skipping notification");
+            return;
+        }
+        try {
+            SimpleMailMessage mail = new SimpleMailMessage();
+            if (!isBlank(fromEmail)) {
+                mail.setFrom(fromEmail);
+            }
+            mail.setTo(ownerEmail);
+            mail.setSubject("New inquiry: " + inquiry.getInquirySubject());
+            mail.setText("A new inquiry was submitted on The Loft by the Lake website.\n\n"
+                    + "Name:    " + fullName + "\n"
+                    + "Email:   " + email + "\n"
+                    + "Phone:   " + phoneNo + "\n"
+                    + "Subject: " + inquiry.getInquirySubject() + "\n\n"
+                    + "Message:\n" + inquiry.getMessage());
+            mailSender.send(mail);
+        } catch (Exception e) {
+            // If email fails (wrong password, no internet...) the inquiry is ALREADY saved.
+            // We just log it instead of showing the guest an error.
+            log.warn("Could not send owner notification: {}", e.getMessage());
+        }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

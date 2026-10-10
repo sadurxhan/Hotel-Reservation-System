@@ -57,4 +57,17 @@ public class MenuShowcaseService {
         menuShowcaseRepository.deleteById(menuId);
         // deleteById() is another free method from JpaRepository.
     }
+
+    // Public Menu page: only meals marked available
+    public List<MenuShowcase> getAvailableMenuItems() {
+        return menuShowcaseRepository.findAvailableItems();
+    }
+
+    // Saves the uploaded image's URL onto the menu item
+    public MenuShowcase updateImageUrl(Integer menuId, String url) {
+        MenuShowcase item = menuShowcaseRepository.findById(menuId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found"));
+        item.setFileUrl(url);
+        return menuShowcaseRepository.save(item);
+    }
 }

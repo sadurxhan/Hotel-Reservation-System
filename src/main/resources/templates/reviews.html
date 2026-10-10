@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Guest Reviews - The Loft by the Lake</title>
+    <style>
+        body { font-family: Georgia, serif; background: #f5f0eb; margin: 0; padding: 40px; }
+        .container { display: flex; gap: 24px; max-width: 900px; margin: 0 auto; }
+        .box { background: white; border-radius: 8px; padding: 30px; flex: 1; }
+        label.field { display: block; margin-top: 16px; font-weight: bold; }
+        input[type=text], input[type=email], input[type=tel], textarea {
+            width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc;
+            border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        }
+        button { margin-top: 20px; width: 100%; padding: 12px; background: #6b1e3c;
+            color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+
+        /* ---- star picker ----
+           The 5 radio buttons are written in the order 5,4,3,2,1 and shown in
+           reverse (row-reverse), so they look like 1..5 left to right. That lets the
+           "~" selector colour every star to the LEFT of the one you hover or pick. */
+        .stars { display: flex; flex-direction: row-reverse; justify-content: flex-end; margin-top: 6px; }
+        .stars input { position: absolute; opacity: 0; width: 1px; height: 1px; } /* hidden, but still "required"-checkable */
+        .stars label { font-size: 34px; color: #ccc; cursor: pointer; padding-right: 4px; }
+        .stars input:checked ~ label,
+        .stars label:hover,
+        .stars label:hover ~ label { color: #e0a800; }
+
+        .review { border-bottom: 1px solid #eee; padding: 14px 0; }
+        .review .rating { color: #e0a800; font-size: 20px; }
+        .empty { color: #777; font-style: italic; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- BOX 1: submit a review -->
+    <div class="box">
+        <h1>Leave a Review</h1>
+        <p>Tell us about your stay. Reviews appear here once our team approves them.</p>
+
+        <form th:action="@{/reviews}" method="post">
+            <label class="field">Full Name</label>
+            <input type="text" name="fullName" placeholder="Your name" required>
+
+            <label class="field">Email Address</label>
+            <input type="email" name="email" placeholder="your@email.com" required>
+
+            <label class="field">Phone Number</label>
+            <input type="tel" name="phoneNo" placeholder="+94 7X XXX XXXX" required>
+
+            <label class="field">Your Rating</label>
+            <div class="stars">
+                <!-- name="rating" must match @RequestParam Integer rating in ReviewPageController -->
+                <input type="radio" id="star5" name="rating" value="5" required><label for="star5">&#9733;</label>
+                <input type="radio" id="star4" name="rating" value="4"><label for="star4">&#9733;</label>
+                <input type="radio" id="star3" name="rating" value="3"><label for="star3">&#9733;</label>
+                <input type="radio" id="star2" name="rating" value="2"><label for="star2">&#9733;</label>
+                <input type="radio" id="star1" name="rating" value="1"><label for="star1">&#9733;</label>
+            </div>
+
+            <label class="field">Your Comment</label>
+            <textarea name="comment" rows="5" placeholder="What did you enjoy?" required></textarea>
+
+            <button type="submit">Submit Review</button>
+        </form>
+    </div>
+
+    <!-- BOX 2: approved reviews -->
+    <div class="box">
+        <h1>What Guests Say</h1>
+
+        <!-- th:if shows this line only when the list is empty -->
+        <p class="empty" th:if="${#lists.isEmpty(reviews)}">No reviews yet - be the first!</p>
+
+        <!-- th:each loops over the "reviews" list the controller put in the Model -->
+        <div class="review" th:each="review : ${reviews}">
+            <!-- '★'.repeat(n) builds a string of n stars: 4 -> ★★★★ , then the rest as empty stars -->
+            <div class="rating"
+                 th:text="${'&#9733;'.repeat(review.rating)} + ${'&#9734;'.repeat(5 - review.rating)}">★★★★★</div>
+            <p th:text="${review.reviewComment}">Great stay!</p>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

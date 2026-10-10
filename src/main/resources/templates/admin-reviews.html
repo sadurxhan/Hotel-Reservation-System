@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Moderation</title>
+    <style>
+        body { font-family: Georgia, serif; background: #f5f0eb; padding: 40px; }
+        .box { background: white; border-radius: 8px; padding: 30px; max-width: 950px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .stars { color: #e0a800; white-space: nowrap; }
+        .PENDING  { color: #b8823a; font-weight: bold; }
+        .APPROVED { color: #3f7d5c; font-weight: bold; }
+        .REJECTED { color: #a33; font-weight: bold; }
+        button { padding: 6px 12px; border: none; border-radius: 4px; color: white; cursor: pointer; }
+        .approve { background: #3f7d5c; }
+        .reject  { background: #a33; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>Review Moderation</h1>
+    <p><b th:text="${pendingCount}">0</b> review(s) waiting for approval.</p>
+
+    <table>
+        <tr><th>ID</th><th>Guest</th><th>Rating</th><th>Comment</th><th>Status</th><th>Action</th></tr>
+
+        <tr th:each="r : ${reviews}">
+            <td th:text="${r.reviewId}">1</td>
+            <td th:text="${r.guestId}">1</td>
+            <td class="stars"
+                th:text="${'&#9733;'.repeat(r.rating)} + ${'&#9734;'.repeat(5 - r.rating)}">★★★★★</td>
+            <td th:text="${r.reviewComment}">comment</td>
+            <!-- th:class sets the colour class to the status text itself (PENDING / APPROVED / REJECTED) -->
+            <td th:text="${r.reviewStatus}" th:class="${r.reviewStatus}">PENDING</td>
+            <td>
+                <!-- Approve button: hidden if the review is already APPROVED -->
+                <form th:if="${r.reviewStatus != 'APPROVED'}" style="display:inline"
+                      th:action="@{/admin/reviews/{id}/moderate(id=${r.reviewId})}" method="post">
+                    <input type="hidden" name="status" value="APPROVED">
+                    <button type="submit" class="approve">Approve</button>
+                </form>
+                <!-- Reject button: hidden if the review is already REJECTED -->
+                <form th:if="${r.reviewStatus != 'REJECTED'}" style="display:inline"
+                      th:action="@{/admin/reviews/{id}/moderate(id=${r.reviewId})}" method="post">
+                    <input type="hidden" name="status" value="REJECTED">
+                    <button type="submit" class="reject">Reject</button>
+                </form>
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

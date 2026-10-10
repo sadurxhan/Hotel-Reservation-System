@@ -54,4 +54,17 @@ public class ActivityService {
         // Used by admin — removing an activity entirely.
         activityRepository.deleteById(activityId);
     }
+
+    // Public Activities page: only activities marked active
+    public List<Activity> getActiveActivities() {
+        return activityRepository.findActiveActivities();
+    }
+
+    public Activity updateImageUrl(Integer activityId, String url) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new RuntimeException("Activity not found"));
+        activity.setImageUrl(url);
+        return activityRepository.save(activity);
+    }
+
 }

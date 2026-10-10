@@ -17,6 +17,7 @@
 
     <p th:text="${item.mealType}">Sample Type</p>
     <p th:text="${item.mealDescription}">Sample Description</p>
+    <img th:if="${item.fileUrl != null}" th:src="${item.fileUrl}" width="240" alt="meal photo">
 
 </div>
 

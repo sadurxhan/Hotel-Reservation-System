@@ -2,8 +2,10 @@ package com.loft.hotel.controller;
 
 import com.loft.hotel.model.Activity;
 import com.loft.hotel.service.ActivityService;
+import com.loft.hotel.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -12,11 +14,14 @@ import java.util.List;
 public class ActivityController {
 
     private final ActivityService activityService;
+    private final FileStorageService fileStorageService;   // the missing field
 
-    //automatically hand spring a working ActivityServic when this class is created
+    //automatically hand spring a working ActivityService and FileStorageService when this class is created
     @Autowired
-    public ActivityController(ActivityService activityService) {
+    public ActivityController(ActivityService activityService,
+                              FileStorageService fileStorageService) {
         this.activityService = activityService;
+        this.fileStorageService = fileStorageService;
     }
 
     //when visits this url in the browser
@@ -30,20 +35,28 @@ public class ActivityController {
     public Activity addActivity(@RequestParam String title,
                                 @RequestParam String activityDescription,
                                 @RequestParam String pricingNote,
-                                @RequestParam String imageUrl) {
+                                @RequestParam(required = false) String imageUrl) {
         return activityService.addActivity(title, activityDescription, pricingNote, imageUrl);
     }
 
-    //when the data should be update
+    //when the data should be updated
     @PutMapping("/update/{activityId}")
     public Activity updateActivity(@PathVariable Integer activityId,
                                    @RequestParam String title,
                                    @RequestParam String activityDescription,
                                    @RequestParam String pricingNote,
-                                   @RequestParam String imageUrl,
+                                   @RequestParam(required = false) String imageUrl,
                                    @RequestParam Boolean isActive) {
         return activityService.updateActivity(activityId, title, activityDescription,
                 pricingNote, imageUrl, isActive);
+    }
+
+    // POST /api/activity/2/image   (form-data, key = "file")
+    @PostMapping("/{activityId}/image")
+    public Activity uploadImage(@PathVariable Integer activityId,
+                                @RequestParam("file") MultipartFile file) {
+        String url = fileStorageService.store(file, "activities");   // 1. save the file, get its URL
+        return activityService.updateImageUrl(activityId, url);      // 2. store the URL on the row
     }
 
     //when something should be removed
