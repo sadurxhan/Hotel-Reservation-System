@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Invoice | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+
+</head>
+
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        <span class="brand-name">The Loft</span>
+        <span class="brand-subtitle">by the Lake</span>
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+    <section class="invoice">
+
+        <div class="invoice-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    THE LOFT BY THE LAKE
+                </p>
+
+                <h1>
+                    Invoice
+                </h1>
+
+            </div>
+
+
+            <div class="invoice-status">
+
+                <span>
+                    Status
+                </span>
+
+                <strong th:text="${invoice.invoiceStatus}">
+                    ISSUED
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="invoice-details">
+
+            <div>
+
+                <span>
+                    Invoice ID
+                </span>
+
+                <strong th:text="${invoice.invoiceId}">
+                    invoice-id
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Payment ID
+                </span>
+
+                <strong th:text="${invoice.paymentId}">
+                    payment-id
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Issued Date
+                </span>
+
+                <strong th:text="${invoice.issuedDateTime}">
+                    date
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="invoice-total">
+
+            <span>
+                Total Paid
+            </span>
+
+            <strong>
+
+                LKR
+
+                <span th:text="${#numbers.formatDecimal(
+                    invoice.totalAmount,
+                    2,
+                    2
+                )}">
+                    60000.00
+                </span>
+
+            </strong>
+
+        </div>
+
+
+        <div class="invoice-footer">
+
+            <p>
+                Thank you for choosing The Loft by the Lake.
+            </p>
+
+            <button type="button"
+                    class="secondary-button"
+                    onclick="window.print()">
+
+                Print Invoice
+
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+</body>
+</html>

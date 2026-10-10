@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pay for Reservation</title>
+</head>
+<body>
+<h1>Reservation Payment</h1>
+
+<p>
+    Reservation ID:
+    <span th:text="${reservation.reservationId}"></span>
+</p>
+
+<p>
+    Amount:
+    LKR <span th:text="${amount}"></span>
+</p>
+<form th:action="${payhereUrl}" method="post">
+
+    <input type="hidden" name="merchant_id" th:value="${merchantId}">
+    <input type="hidden" name="return_url" th:value="${returnUrl}">
+    <input type="hidden" name="cancel_url" th:value="${cancelUrl}">
+    <input type="hidden" name="notify_url" th:value="${notifyUrl}">
+
+    <input type="hidden" name="order_id" th:value="${orderId}">
+    <input type="hidden" name="items"
+           th:value="'Reservation #' + ${reservation.reservationId}">
+    <input type="hidden" name="currency" th:value="${currency}">
+    <input type="hidden" name="amount" th:value="${amount}">
+
+    <!-- PayHere requires these exact parameter names -->
+    <input type="hidden" name="first_name" th:value="${guest.fname}">
+    <input type="hidden" name="last_name" th:value="${guest.lname}">
+    <input type="hidden" name="email" th:value="${guest.email}">
+    <input type="hidden" name="phone" th:value="${guest.phoneNo}">
+
+    <input type="hidden" name="address" value="Not provided">
+    <input type="hidden" name="city" value="Colombo">
+    <input type="hidden" name="country" value="Sri Lanka">
+
+    <input type="hidden" name="hash" th:value="${hash}">
+
+    <button type="submit">Pay Now</button>
+</form>
+</body>
+</html>

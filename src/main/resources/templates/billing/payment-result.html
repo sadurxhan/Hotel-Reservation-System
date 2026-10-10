@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Result | The Loft by the Lake</title>
+    <link rel="stylesheet" th:href="@{/css/billing.css}">
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <span class="brand-name">The Loft</span>
+        <span class="brand-subtitle">by the Lake</span>
+    </div>
+</header>
+
+<main class="page-container">
+    <section class="result-card">
+
+        <!-- PAID -->
+        <div th:if="${payment.paymentStatus.name() == 'PAID'}"
+             class="result-icon success-icon">✓</div>
+
+        <h1 th:if="${payment.paymentStatus.name() == 'PAID'}">
+            Payment Successful
+        </h1>
+
+        <p th:if="${payment.paymentStatus.name() == 'PAID'}"
+           class="result-description">
+            Your payment has been verified and your reservation has been confirmed.
+        </p>
+
+        <!-- PENDING -->
+        <div th:if="${payment.paymentStatus.name() == 'PENDING'}"
+             class="result-icon">…</div>
+
+        <h1 th:if="${payment.paymentStatus.name() == 'PENDING'}">
+            Processing Payment
+        </h1>
+
+        <p th:if="${payment.paymentStatus.name() == 'PENDING'}"
+           class="result-description">
+            We are waiting for PayHere to confirm your payment.
+            Please refresh this page in a moment. Do not pay again while
+            the payment is being verified.
+        </p>
+
+        <!-- FAILED -->
+        <div th:if="${payment.paymentStatus.name() == 'FAILED'}"
+             class="result-icon failure-icon">!</div>
+
+        <h1 th:if="${payment.paymentStatus.name() == 'FAILED'}">
+            Payment Failed
+        </h1>
+
+        <p th:if="${payment.paymentStatus.name() == 'FAILED'}"
+           class="result-description">
+            Your payment could not be completed. Check your reservation
+            status before trying again.
+        </p>
+
+        <!-- Payment details -->
+        <div class="result-details">
+
+            <div class="detail-row">
+                <span>Payment ID</span>
+                <strong th:text="${payment.paymentId}">PAY001</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Reservation ID</span>
+                <strong th:text="${payment.reservationId}">101</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Amount</span>
+                <strong>
+                    LKR
+                    <span th:text="${#numbers.formatDecimal(payment.amount, 2, 2)}">
+                        60000.00
+                    </span>
+                </strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Payment Method</span>
+                <strong th:text="${payment.paymentMethod}">Credit_Card</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Status</span>
+                <span class="status-badge"
+                      th:text="${payment.paymentStatus}">PENDING</span>
+            </div>
+
+            <div th:if="${payment.transactionId != null}" class="detail-row">
+                <span>Transaction ID</span>
+                <strong th:text="${payment.transactionId}">TXN001</strong>
+            </div>
+
+        </div>
+
+        <!-- Actions -->
+        <div class="result-actions">
+
+            <div th:if="${payment.paymentStatus.name() == 'PAID'}"
+                 class="result-button-group">
+
+                <a th:if="${invoice != null}"
+                   class="primary-button"
+                   th:href="@{/invoice(invoiceId=${invoice.invoiceId})}">
+                    View Invoice
+                </a>
+
+                <a class="secondary-button"
+                   th:href="@{/cancellation(reservationId=${payment.reservationId})}">
+                    Manage Cancellation
+                </a>
+
+            </div>
+
+            <a th:if="${payment.paymentStatus.name() == 'FAILED'}"
+               class="primary-button"
+               th:href="@{/payment(reservationId=${payment.reservationId})}">
+                Try Payment Again
+            </a>
+
+        </div>
+
+    </section>
+</main>
+
+</body>
+</html>
