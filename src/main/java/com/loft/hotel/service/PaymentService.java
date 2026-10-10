@@ -105,10 +105,11 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Payment not found: " + paymentId));
 
-        // Validate repeated notifications against the recorded payment.
+        // Make repeated successful notifications idempotent.
         if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
             boolean sameTransaction =
                     transactionId.equals(payment.getTransactionId());
+
             boolean sameAmount =
                     payment.getAmount() != null
                             && payment.getAmount().compareTo(paidAmount) == 0;
@@ -160,7 +161,8 @@ public class PaymentService {
         reservation.setReservationStatus(ReservationStatus.CONFIRMED);
         reservationRepository.save(reservation);
 
-        // Creates the invoice after successful payment verification.
+        // Create the invoice after successful payment verification.
+        // PayHereController sends the invoice email after this method returns.
         invoiceService.createInvoice(payment.getPaymentId());
 
         return payment;
@@ -179,7 +181,9 @@ public class PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Payment not found: " + paymentId));
 
-        if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
+        // Repeated notifications must not change the payment again.
+        if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID
+                || payment.getPaymentStatus() == Payment.PaymentStatus.FAILED) {
             return payment;
         }
 

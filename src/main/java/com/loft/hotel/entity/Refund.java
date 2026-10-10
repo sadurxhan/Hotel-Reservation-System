@@ -1,4 +1,3 @@
-
 package com.loft.hotel.entity;
 
 import jakarta.persistence.*;
@@ -18,7 +17,6 @@ import java.time.LocalDateTime;
         }
 )
 public class Refund {
-
     @Id
     @Column(name = "refund_id", length = 40)
     private String refundId;
@@ -26,8 +24,10 @@ public class Refund {
     @Column(name = "payment_id", nullable = false, length = 40)
     private String paymentId;
 
+    // PENDING  = refund created, admin has not paid the guest yet
+    // REFUNDED = admin paid the guest manually and marked it as paid
     public enum RefundStatus {
-        PENDING, APPROVED, REFUNDED, REJECTED
+        PENDING, REFUNDED
     }
 
     @Enumerated(EnumType.STRING)
@@ -70,6 +70,6 @@ public class Refund {
     public void setRefundDateTime(LocalDateTime refundDateTime){ this.refundDateTime = refundDateTime; }
     public LocalDateTime getRefundDateTime(){ return refundDateTime; }
 
-    public void setRefundAmount(BigDecimal refundAmount){this.refundAmount = refundAmount; }
+    public void setRefundAmount(BigDecimal refundAmount){ this.refundAmount = refundAmount; }
     public BigDecimal getRefundAmount(){ return refundAmount; }
 }

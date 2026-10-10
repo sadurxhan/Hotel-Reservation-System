@@ -1,4 +1,3 @@
-
 package com.loft.hotel.repository;
 
 import com.loft.hotel.entity.Payment;
