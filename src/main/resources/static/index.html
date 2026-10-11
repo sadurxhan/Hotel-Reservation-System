@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Loft by the Lake | Boutique Lakefront Retreat</title>
+
+    <!-- Editorial Luxury Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Team's Modular CSS Sheets (with cache busters) -->
+    <link rel="stylesheet" href="css/base.css?v=2">
+    <link rel="stylesheet" href="css/rooms.css?v=2">
+    <link rel="stylesheet" href="css/calendar.css?v=2">
+    <link rel="stylesheet" href="css/showcase.css?v=2">
+    <!-- Inline Form Fix to override browser cache -->
+    <style>
+        .form-group {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          margin-bottom: 18px !important;
+          width: 100% !important;
+        }
+        .form-group label {
+          display: block !important;
+          font-size: 0.9rem !important;
+          font-weight: 700 !important;
+          color: #1B3B2B !important;
+          margin-bottom: 6px !important;
+        }
+        .form-control {
+          display: block !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          padding: 12px 14px !important;
+          border: 1px solid #D8D2C4 !important;
+          border-radius: 8px !important;
+          font-size: 0.92rem !important;
+          color: #2D3748 !important;
+          background-color: #FFFFFF !important;
+          outline: none !important;
+          transition: border-color 0.2s ease !important;
+        }
+        .form-control:focus {
+          border-color: #1B3B2B !important;
+          box-shadow: 0 0 0 3px rgba(27, 59, 43, 0.12) !important;
+        }
+        .form-row {
+          display: grid !important;
+          grid-template-columns: 1fr 1fr !important;
+          gap: 16px !important;
+          width: 100% !important;
+        }
+        @media (max-width: 640px) {
+          .form-row {
+            grid-template-columns: 1fr !important;
+            gap: 0 !important;
+          }
+        }
+        .write-review-container {
+          background: #FFFFFF !important;
+          border: 1px solid #EFE9DE !important;
+          border-radius: 20px !important;
+          padding: 36px !important;
+          margin-top: 45px !important;
+          box-shadow: 0 4px 20px rgba(27, 59, 43, 0.04) !important;
+          max-width: 720px !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+        .contact-grid {
+          display: grid !important;
+          grid-template-columns: 1.1fr 1fr !important;
+          gap: 32px !important;
+          align-items: start !important;
+        }
+        @media (max-width: 860px) {
+          .contact-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        .contact-card {
+          background: #FFFFFF !important;
+          border: 1px solid #EFE9DE !important;
+          border-radius: 20px !important;
+          padding: 36px !important;
+          box-shadow: 0 4px 20px rgba(27, 59, 43, 0.04) !important;
+        }
+        .star-picker {
+          display: inline-flex !important;
+          flex-direction: row-reverse !important;
+          gap: 6px !important;
+          font-size: 1.6rem !important;
+        }
+        .star-picker input {
+          display: none !important;
+        }
+        .star-picker label {
+          color: #D1D5DB !important;
+          cursor: pointer !important;
+          margin: 0 !important;
+          transition: color 0.15s ease, transform 0.15s ease !important;
+        }
+        .star-picker label:hover,
+        .star-picker label:hover ~ label,
+        .star-picker input:checked ~ label {
+          color: #D4B46A !important;
+        }
+
+        /* =====================================================================
+           RESERVATION MODAL OVERLAY (HIDDEN UNTIL "MAKE RESERVATION" IS CLICKED)
+           ===================================================================== */
+        .modal-backdrop {
+          display: none !important;
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          background: rgba(15, 23, 20, 0.75) !important;
+          backdrop-filter: blur(6px) !important;
+          -webkit-backdrop-filter: blur(6px) !important;
+          z-index: 99999 !important;
+          justify-content: center !important;
+          align-items: center !important;
+          padding: 20px !important;
+          box-sizing: border-box !important;
+          overflow-y: auto !important;
+        }
+
+        /* Shows only when triggered */
+        .modal-backdrop.active,
+        .modal-backdrop.show {
+          display: flex !important;
+        }
+
+        /* Clean centered card container */
+        .modal-dialog {
+          background: #FFFFFF !important;
+          border: 1px solid #EFE9DE !important;
+          border-radius: 20px !important;
+          max-width: 680px !important;
+          width: 100% !important;
+          padding: 36px 40px !important;
+          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25) !important;
+          position: relative !important;
+          margin: auto !important;
+        }
+
+        .modal-close {
+          position: absolute !important;
+          top: 20px !important;
+          right: 20px !important;
+          background: #F1ECE1 !important;
+          border: none !important;
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 50% !important;
+          font-size: 1.2rem !important;
+          color: #1B3B2B !important;
+          cursor: pointer !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          transition: background 0.15s ease !important;
+        }
+        .modal-close:hover {
+          background: #E2DAC8 !important;
+        }
+
+        .pricing-breakdown-card {
+          background: #F8F5F0 !important;
+          border: 1px solid #EFE9DE !important;
+          border-radius: 12px !important;
+          padding: 16px 20px !important;
+          margin: 18px 0 !important;
+        }
+        .breakdown-row {
+          display: flex !important;
+          justify-content: space-between !important;
+          margin-bottom: 6px !important;
+          font-size: 0.88rem !important;
+          color: #6B726C !important;
+        }
+        .breakdown-total {
+          margin-top: 10px !important;
+          padding-top: 10px !important;
+          border-top: 1px dashed #D8D2C4 !important;
+          font-weight: 700 !important;
+          font-size: 1.05rem !important;
+          color: #1B3B2B !important;
+        }
+
+        /* Clean Minimal Footer Social Buttons */
+        .social-strip {
+            display: flex !important;
+            gap: 14px !important;
+            justify-content: center !important;
+            margin: 28px 0 20px !important;
+        }
+
+        .social-circle-btn {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 50% !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #F8F5F0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-decoration: none !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .social-circle-btn:hover {
+            background: #D4B46A !important;
+            border-color: #D4B46A !important;
+            color: #1B3B2B !important;
+            transform: translateY(-2px) !important;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<!-- ================= TOP NAVIGATION ================= -->
+<header class="navbar">
+    <div class="container nav-content">
+        <div class="brand">
+            <span class="brand-title">The Loft by the Lake</span>
+            <span class="brand-subtitle">Kurunegala • Sri Lanka</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#lofts">The Lofts</a></li>
+                <li><a href="#calendar">Availability</a></li>
+                <li><a href="#experiences">Experiences</a></li>
+                <li><a href="#reviews">Reviews</a></li>
+                <li><a href="#inquiry">Contact</a></li>
+                <li><a href="#calendar" class="btn btn-gold">Check Dates</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ================= HERO SECTION ================= -->
+<section class="hero-section container">
+    <div class="hero-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px; gap: 30px;">
+        <div>
+            <div class="pill-badge">Ancient Kuda Wewa • Protected Sanctuary</div>
+            <h1 style="font-size: clamp(2.2rem, 4vw, 3.4rem); max-width: 650px; margin-top: 14px;">An Intimate Sanctuary with Just Two Exclusive Lofts</h1>
+        </div>
+        <p style="max-width: 420px; font-size: 1rem; color: var(--text-muted);">
+            A peaceful rural escape where you can disconnect from city noise and immerse yourself in ancient tank waters, endless emerald paddy fields, and genuine Sri Lankan village warmth.
+        </p>
+    </div>
+
+    <!-- Curated Photography Gallery Grid (5 Actual Property Photos) -->
+    <div class="hero-gallery-v2">
+        <!-- 1. Main Featured: Aerial Paddy View -->
+        <div class="gallery-tile tile-featured" onclick="openGalleryModal(0)">
+            <img id="heroImg0" src="images/hero/aerial-paddy.jpg" alt="Aerial View of The Loft by the Lake & Paddy Fields">
+            <div class="tile-overlay">
+                <span>Aerial Perspective</span>
+                <h4>Surrounded by Lush Emerald Paddy Fields</h4>
+            </div>
+        </div>
+
+        <!-- 2. Front Exterior with Blue Sky -->
+        <div class="gallery-tile" onclick="openGalleryModal(1)">
+            <img id="heroImg1" src="images/hero/front-exterior.jpg" alt="Front Exterior View">
+            <div class="tile-overlay">
+                <h4>The Loft by the Lake</h4>
+            </div>
+        </div>
+
+        <!-- 3. Dining & Sitting Area (Left View) -->
+        <div class="gallery-tile" onclick="openGalleryModal(2)">
+            <img id="heroImg2" src="images/hero/dining-left.jpg" alt="Open Dining & Living Pavilion">
+            <div class="tile-overlay">
+                <h4>Open Living Pavilion</h4>
+            </div>
+        </div>
+
+        <!-- 4. Dining & Sitting Area (Right View) -->
+        <div class="gallery-tile" onclick="openGalleryModal(3)">
+            <img id="heroImg3" src="images/hero/dining-right.jpg" alt="Sheltered Lakefront Seating">
+            <div class="tile-overlay">
+                <h4>Breezy Shaded Lounge</h4>
+            </div>
+        </div>
+
+        <!-- 5. Kitchen -->
+        <div class="gallery-tile" onclick="openGalleryModal(4)">
+            <img id="heroImg4" src="images/hero/village-kitchen.jpg" alt="Traditional Village Kitchen">
+            <div class="tile-overlay">
+                <h4>Kitchen Area</h4>
+            </div>
+        </div>
+
+        <button class="btn-view-gallery" onclick="openGalleryModal(0)">
+            View All Photos
+        </button>
+    </div>
+
+    <!-- Lightbox Gallery Modal -->
+    <div class="gallery-modal" id="heroGalleryModal">
+        <div class="gallery-modal-content">
+            <button class="gallery-modal-close" onclick="closeGalleryModal()">&times;</button>
+            <button class="gallery-modal-nav gallery-modal-prev" onclick="changeGallerySlide(-1)">&larr;</button>
+            <img id="galleryModalActiveImg" class="gallery-modal-img" src="" alt="Property View">
+            <div id="galleryModalCaption" class="gallery-modal-caption"></div>
+            <button class="gallery-modal-nav gallery-modal-next" onclick="changeGallerySlide(1)">&rarr;</button>
+        </div>
+    </div>
+
+    <!-- Trust Badges Strip -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 35px;">
+        <div style="background: #fff; border: 1px solid var(--border-card); padding: 20px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; background: var(--bg-muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🏡</div>
+            <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--primary-green);">2 Rooms Only</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Intimate, zero-crowd privacy</span>
+            </div>
+        </div>
+        <div style="background: #fff; border: 1px solid var(--border-card); padding: 20px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; background: var(--bg-muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🛶</div>
+            <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--primary-green);">Kuda Wewa Lake</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Kayaks &amp; tranquil shores</span>
+            </div>
+        </div>
+        <div style="background: #fff; border: 1px solid var(--border-card); padding: 20px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; background: var(--bg-muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🍲</div>
+            <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--primary-green);">Cooked with Love</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Clay-pot village gastronomy</span>
+            </div>
+        </div>
+        <div style="background: #fff; border: 1px solid var(--border-card); padding: 20px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; background: var(--bg-muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🐾</div>
+            <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--primary-green);">Pet Friendly</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Welcoming furry companions</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= ACCOMMODATIONS (MEMBER 1 SCOPE) ================= -->
+<section id="lofts" class="section-padding container">
+    <div class="section-head">
+        <div class="pill-badge">Handcrafted Earthen Lofts</div>
+        <h2>Our Two Handcrafted Rooms</h2>
+        <p>
+            Built side-by-side using natural earthen clay walls and unpolished timber beams. Both rooms feature authentic loft mezzanine sleeping spaces and peaceful views across emerald paddy fields. To preserve absolute serenity, we only host one guest party at a time.
+        </p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 40px; margin-top: 30px;">
+        <!-- Room 1: The Front Loft -->
+        <article style="background: #FFFFFF; border: 1px solid #EFE9DE; border-radius: 20px; overflow: hidden; display: grid; grid-template-columns: 1.2fr 1fr; box-shadow: 0 4px 15px rgba(27, 59, 43, 0.05);">
+            <!-- 3-Photo Left Grid with +1 View Badge at bottom right -->
+            <div style="display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: 160px 160px; gap: 8px; padding: 12px; background: #F8F5F0;">
+                <div style="grid-row: span 2; position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(1, 0)">
+                    <img src="images/rooms/room1_fullView.JPG" alt="Room 01 Full View" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Layout &amp; Structure</span>
+                </div>
+                <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(1, 1)">
+                    <img src="images/rooms/room1_loft.JPG" alt="Room 01 Loft Beds" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Spacious Loft Beds</span>
+                </div>
+                <!-- 3rd Tile with bottom-right +1 View badge -->
+                <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(1, 2)">
+                    <img src="images/rooms/room1_pic2.JPG" alt="Room 01 Ground Beds" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Ground Bed Area</span>
+
+                    <div onclick="event.stopPropagation(); openRoomGallery(1, 3);"
+                         style="position: absolute; bottom: 8px; right: 8px; background: rgba(27, 59, 43, 0.9); backdrop-filter: blur(4px); color: #fff; font-size: 0.7rem; padding: 3px 9px; border-radius: 4px; font-weight: 600; border: 1px solid rgba(255,255,255,0.25); cursor: pointer; transition: transform 0.15s ease;">
+                        +1 View
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details on Right -->
+            <div style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <h3 style="font-size: 1.5rem; color: #1B3B2B; margin: 0;">The Front Loft</h3>
+                        <span class="pill-badge">Room 01 • Extra Spacious</span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #6B726C; line-height: 1.5; margin-bottom: 16px;">
+                        Our larger room situated at the front of the stilted structure. Features higher mezzanine headroom, extra floor room, and breezy cross-ventilation overlooking the greenery.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; padding: 12px 0; border-top: 1px solid #E7E0D3; border-bottom: 1px solid #E7E0D3;">
+                        <span>👥 Up to 4–5 Guests</span>
+                        <span>🪜 Large Loft + Ground Beds</span>
+                        <span>🚿 Private Ensuite Bathroom</span>
+                        <span>🍃 Earthen Clay Walls</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: #8A7352; font-weight: 700; display: block;">Dynamic Rate From</span>
+                        <strong style="font-size: 1.5rem; color: #1B3B2B;">LKR 19,500</strong> <small style="color: #6B726C;">/ night</small>
+                    </div>
+                    <button class="btn btn-primary" onclick="selectRoomAndScroll(1, 'The Front Loft (Room 01)')">Book Room 01 ➔</button>
+                </div>
+            </div>
+        </article>
+
+        <!-- Room 2: The Cozy Loft -->
+        <article style="background: #FFFFFF; border: 1px solid #EFE9DE; border-radius: 20px; overflow: hidden; display: grid; grid-template-columns: 1.2fr 1fr; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <!-- 3-Photo Left Grid with +1 View Badge at bottom right -->
+            <div style="display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: 160px 160px; gap: 8px; padding: 12px; background: #F8F5F0;">
+                <div style="grid-row: span 2; position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(2, 0)">
+                    <img src="images/rooms/room2_fullView.JPG" alt="Room 02 Layout" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Layout &amp; Structure</span>
+                </div>
+                <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(2, 2)">
+                    <img src="images/rooms/room2_pic2.JPG" alt="Room 02 Cozy Mezzanine" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Cozy</span>
+                </div>
+                <!-- 3rd Tile with bottom-right +1 View badge -->
+                <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;" onclick="openRoomGallery(2, 1)">
+                    <img src="images/rooms/room2_pic1.JPG" alt="Room 02 Ground Bed Setup" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;">Ground Bed Area</span>
+
+                    <div onclick="event.stopPropagation(); openRoomGallery(2, 3);"
+                         style="position: absolute; bottom: 8px; right: 8px; background: rgba(27, 59, 43, 0.9); backdrop-filter: blur(4px); color: #fff; font-size: 0.7rem; padding: 3px 9px; border-radius: 4px; font-weight: 600; border: 1px solid rgba(255,255,255,0.25); cursor: pointer; transition: transform 0.15s ease;">
+                        +1 View
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details on Right -->
+            <div style="padding: 28px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <h3 style="font-size: 1.5rem; color: #1B3B2B; margin: 0;">The Cozy Loft</h3>
+                        <span class="pill-badge">Room 02 • Cozy</span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #6B726C; line-height: 1.5; margin-bottom: 16px;">
+                        Built side-by-side with Room 01, this intimate room offers identical earthy finishes, handmade timber stairs, and calming outlooks across emerald village paddy fields.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; padding: 12px 0; border-top: 1px solid #E7E0D3; border-bottom: 1px solid #E7E0D3;">
+                        <span>👥 Up to 4–5 Guests</span>
+                        <span>🪜 Cozy Loft + Ground Beds</span>
+                        <span>🚿 Private Ensuite Bathroom</span>
+                        <span>🍃 Earthen Clay Walls</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: #8A7352; font-weight: 700; display: block;">Dynamic Rate From</span>
+                        <strong style="font-size: 1.5rem; color: #1B3B2B;">LKR 16,500</strong> <small style="color: #6B726C;">/ night</small>
+                    </div>
+                    <button class="btn btn-primary" onclick="selectRoomAndScroll(2, 'The Cozy Loft (Room 02)')">Book Room 02 ➔</button>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <!-- Exclusive Estate Buyout Banner -->
+    <div style="background-color: #1B3B2B; color: #FFFFFF; border-radius: 20px; padding: 42px; margin-top: 45px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 32px; align-items: center;">
+        <div>
+            <div class="pill-badge" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2);">Guaranteed Exclusive Stay</div>
+            <h3 style="font-size: 1.8rem; color: #fff; margin: 12px 0 10px;">Private Estate Sanctuary</h3>
+            <p style="color: rgba(255, 255, 255, 0.88); font-size: 0.92rem; line-height: 1.65;">
+                Every stay at The Loft is entirely exclusive. Whether you reserve a single room or the whole lodge, the remaining quarters are never offered to other guests—the open living pavilions, private dining verandah, and surrounding garden grounds remain solely yours. For families or groups seeking up to 10 beds, reserve both rooms together.
+            </p>
+        </div>
+        <div style="background-color: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 14px; padding: 25px; text-align: center;">
+            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #D4B46A; font-weight: 700; display: block; margin-bottom: 4px;">Dynamic Rate From</span>
+            <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.7); display: block; margin-bottom: 8px;">Both Rooms • Up to 10 Guests</span>
+            <h4 style="color: #fff; font-size: 1.7rem; margin: 0 0 15px;">LKR 35,000 <small style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">/ night</small></h4>
+            <button class="btn btn-gold" onclick="selectRoomAndScroll(3, 'Both Rooms (Entire Lodge)')" style="width: 100%;">Reserve Both Rooms</button>
+        </div>
+    </div>
+</section>
+
+<!-- ================= CALENDAR AVAILABILITY (MEMBER 2 SCOPE) ================= -->
+<section id="calendar" class="calendar-section">
+    <div class="container">
+        <div class="section-head">
+            <div class="pill-badge">Live Availability</div>
+            <h2>Select Your Stay Dates</h2>
+            <p>Choose your arrival and departure dates to check real-time availability and confirm your private stay at the lake.</p>
+        </div>
+
+        <div class="calendar-card">
+            <!-- Promotional Packages Badge Strip -->
+            <div class="packages-strip" id="calendarPackagesContainer"></div>
+
+            <div class="calendar-header">
+                <button class="calendar-nav-btn" id="calPrevBtn">&larr;</button>
+                <h3 id="calCurrentMonthYear">Month Year</h3>
+                <button class="calendar-nav-btn" id="calNextBtn">&rarr;</button>
+            </div>
+
+            <div class="calendar-legend">
+                <div class="legend-chip"><div class="chip-dot chip-avail"></div> Available</div>
+                <div class="legend-chip"><div class="chip-dot chip-block"></div> Booked / Blocked</div>
+                <div class="legend-chip"><div class="chip-dot chip-select"></div> Selected Stay</div>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid">
+                <div class="weekday-label">Sun</div>
+                <div class="weekday-label">Mon</div>
+                <div class="weekday-label">Tue</div>
+                <div class="weekday-label">Wed</div>
+                <div class="weekday-label">Thu</div>
+                <div class="weekday-label">Fri</div>
+                <div class="weekday-label">Sat</div>
+            </div>
+
+            <div class="calendar-action-bar">
+                <div class="selected-span-text">
+                    Check-in: <strong id="calSpanCheckIn">Select arrival</strong> &nbsp;|&nbsp;
+                    Check-out: <strong id="calSpanCheckOut">Select departure</strong>
+                </div>
+                <button class="btn btn-primary" id="btnMakeReservation" style="display: none;" onclick="openBookingDrawer()">
+                    Make Reservation ➔
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= EXPERIENCES & DINING (MEMBER 4 SCOPE) ================= -->
+<section id="experiences" class="section-padding container">
+    <div class="section-head">
+        <div class="pill-badge">Village Living &amp; Excursions</div>
+        <h2>Authentic Activities &amp; Mindful Living</h2>
+        <p>There are no crowded hotel lobbies or artificial schedules here. Days move to the gentle pulse of the village, ripples across Kuda Wewa, and birdsong echoing from the Galgiriya hills.</p>
+    </div>
+
+    <!-- Dynamic Activities Container (populated from DB via /api/activity/all) -->
+    <div class="experiences-grid" id="dynamicActivitiesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 50px;">
+        <!-- Javascript dynamically injects DB records here -->
+    </div>
+
+    <!-- Dining Feature & Clay-Pot Gastronomy -->
+    <div style="background: #FFFFFF; border: 1px solid #EFE9DE; border-radius: 20px; overflow: hidden; display: grid; grid-template-columns: 1fr 1.3fr; box-shadow: 0 6px 20px rgba(27, 59, 43, 0.05); margin-bottom: 35px;">
+        <div style="position: relative; height: 100%; min-height: 340px; background: #2D3748; cursor: pointer;" onclick="openDiningGallery(0)">
+            <img src="images/menu/A_lunch.jpg" alt="Traditional Clay Pot Lunch Spread" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); color: #fff; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px;">
+                Traditional Clay-Pot Dining • Click to View Food Photos
+            </div>
+        </div>
+        <div style="padding: 35px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div class="pill-badge">Genuine Rural Hospitality</div>
+                <h3 style="font-size: 1.8rem; color: #1B3B2B; margin: 12px 0 14px; font-family: var(--font-serif, Georgia, serif);">
+                    Meet Mahinda &amp; Sunitha: The Soul of Your Stay
+                </h3>
+                <p style="color: #6B726C; font-size: 0.93rem; line-height: 1.6; margin-bottom: 16px;">
+                    Our caretakers Mahinda and Sunitha prepare wholesome Sri Lankan home-cooked meals in earthenware clay pots. All dishes are crafted using locally grown vegetables, fresh catch from village waters, and heirloom regional recipes.
+                </p>
+
+                <!-- Pricing Grid from Menu PDF -->
+                <div style="display: flex; gap: 20px; border-top: 1px solid #E7E0D3; padding-top: 14px; margin-top: 10px;">
+                    <div>
+                        <strong style="color: #1B3B2B; font-size: 1.15rem; display: block;">LKR 1,700</strong>
+                        <span style="color: #8A7352; font-size: 0.75rem; text-transform: uppercase;">Breakfast / Person</span>
+                    </div>
+                    <div>
+                        <strong style="color: #1B3B2B; font-size: 1.15rem; display: block;">LKR 2,000</strong>
+                        <span style="color: #8A7352; font-size: 0.75rem; text-transform: uppercase;">Lunch / Person</span>
+                    </div>
+                    <div>
+                        <strong style="color: #1B3B2B; font-size: 1.15rem; display: block;">LKR 2,000</strong>
+                        <span style="color: #8A7352; font-size: 0.75rem; text-transform: uppercase;">Dinner / Person</span>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #8A7352;">
+                    * Children 5 &amp; under dine complimentary | Ages 6–10 LKR 1,000 per child
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openDiningGallery(0)" style="font-size: 0.88rem; padding: 10px 18px;">
+                    View Food Photos &amp; Menu Card ➔
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Menu Items Cards (loaded from DB via /api/menu/all) -->
+    <div id="dynamicMenuContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+    </div>
+</section>
+
+<!-- ================= GUEST REVIEWS (MEMBER 4 SCOPE) ================= -->
+<section id="reviews" class="section-padding container">
+    <div class="section-head">
+        <div class="pill-badge">Independent Ratings</div>
+        <h2>Guest Impressions</h2>
+        <p>Echoes from travelers who experienced solitude and stillness at the water's edge.</p>
+    </div>
+
+    <!-- Container populated dynamically from database via GET /api/review/all -->
+    <div class="reviews-grid" id="reviewsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 25px;">
+        <p style="color: #6B726C; font-size: 0.9rem;">Loading guest reviews from database...</p>
+    </div>
+
+    <!-- Review Form Card -->
+    <div class="write-review-container">
+        <h3 style="font-size: 1.6rem; color: #1B3B2B; margin-bottom: 6px; font-family: var(--font-serif, Georgia, serif);">Leave a Review</h3>
+        <p style="font-size: 0.9rem; color: #6B726C; margin-bottom: 22px;">Share your stay experience. Reviews are published publicly once approved by our team.</p>
+
+        <form onsubmit="submitReviewForm(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="fullName" class="form-control" placeholder="Your name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" name="phoneNo" class="form-control" placeholder="+94 7X XXX XXXX" required>
+                </div>
+                <div class="form-group">
+                    <label>Your Rating</label>
+                    <div class="star-picker">
+                        <input type="radio" id="star5" name="rating" value="5" required><label for="star5">&#9733;</label>
+                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">&#9733;</label>
+                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">&#9733;</label>
+                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">&#9733;</label>
+                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">&#9733;</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Your Experience</label>
+                <textarea name="comment" class="form-control" rows="4" placeholder="What did you enjoy most about your stay?" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 0.95rem;">Submit Review</button>
+            <div id="reviewFormFeedback" class="inquiry-feedback"></div>
+        </form>
+    </div>
+</section>
+
+<!-- ================= INQUIRY & CONTACT (MEMBER 4 SCOPE) ================= -->
+<section id="inquiry" class="section-padding container">
+    <div class="contact-grid">
+        <!-- Inquiry Form -->
+        <div class="contact-card">
+            <div class="pill-badge">Direct Communication</div>
+            <h3 style="font-size: 1.6rem; color: #1B3B2B; margin: 10px 0 6px; font-family: var(--font-serif, Georgia, serif);">Send Us an Inquiry</h3>
+            <p style="font-size: 0.9rem; color: #6B726C; margin-bottom: 22px;">Fill in the details below and our team will get back to you as soon as possible.</p>
+
+            <form onsubmit="submitInquiryForm(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="fullName" class="form-control" placeholder="Your name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" name="phoneNo" class="form-control" placeholder="+94 7X XXX XXXX" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <select name="subject" class="form-control" required>
+                        <option value="General Inquiry">General Inquiry</option>
+                        <option value="Booking Question">Booking Question</option>
+                        <option value="Pets & Policies">Pets &amp; Policies</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea name="message" class="form-control" rows="4" placeholder="Type your message here..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 0.95rem;">Send Inquiry ➔</button>
+                <div id="inquiryFormFeedback" class="inquiry-feedback"></div>
+            </form>
+        </div>
+
+        <!-- Reach Us & Map -->
+        <div class="contact-card">
+            <div class="pill-badge">Secluded Location</div>
+            <h3 style="font-size: 1.6rem; color: #1B3B2B; margin: 10px 0 6px; font-family: var(--font-serif, Georgia, serif);">To Reach Us</h3>
+
+            <div class="contact-info-list" style="margin-top: 18px; display: flex; flex-direction: column; gap: 14px;">
+                <div class="contact-info-item" style="display: flex; gap: 12px; align-items: flex-start;">
+                    <span class="icon">📍</span>
+                    <div style="font-size: 0.92rem; color: #2D3748;">
+                        <strong style="color: #1B3B2B;">The Loft by the Lake</strong><br>
+                        Kuda Wewa Lake Edge, Embogama, Kurunegala, Sri Lanka
+                    </div>
+                </div>
+                <div class="contact-info-item" style="display: flex; gap: 12px; align-items: flex-start;">
+                    <span class="icon">📞</span>
+                    <div style="font-size: 0.92rem; color: #2D3748;">
+                        <strong style="color: #1B3B2B;">Caretaker Hotline</strong><br>
+                        <a href="tel:+94764816177" style="color: #1B3B2B; text-decoration: underline;">076 481 6177</a> (9:00 AM – 9:00 PM)
+                    </div>
+                </div>
+                <div class="contact-info-item" style="display: flex; gap: 12px; align-items: flex-start;">
+                    <span class="icon">✉️</span>
+                    <div style="font-size: 0.92rem; color: #2D3748;">
+                        <strong style="color: #1B3B2B;">Reservations Desk</strong><br>
+                        <a href="mailto:info@theloftbythelake.com" style="color: #1B3B2B; text-decoration: underline;">info@theloftbythelake.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-embed" style="margin-top: 20px; border-radius: 12px; overflow: hidden; height: 210px; border: 1px solid #EFE9DE;">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.746459055402!2d80.36097417476746!3d7.921530092102024!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3afcc5046664e843%3A0xe14cbd40be0452fd!2sThe%20Loft%20by%20the%20Lake!5e0!3m2!1sen!2slk!4v1790516967800!5m2!1sen!2slk" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= BOOKING & DYNAMIC PRICING MODAL (M1 & M2) ================= -->
+<div class="modal-backdrop" id="bookingModal">
+    <div class="modal-dialog">
+        <button class="modal-close" onclick="closeBookingDrawer()">&times;</button>
+        <div class="pill-badge">Intake &amp; Pricing</div>
+        <h3 style="font-size: 1.8rem; margin: 10px 0 6px;">Complete Your Reservation</h3>
+        <p style="font-size: 0.9rem; margin-bottom: 20px; color: var(--text-muted);">Review your validated stay dates and specify party details.</p>
+
+        <form id="reservationIntakeForm" onsubmit="handleReservationSubmit(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Check-in Date</label>
+                    <input type="date" id="formCheckIn" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Check-out Date</label>
+                    <input type="date" id="formCheckOut" class="form-control" readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Guest Count</label>
+                    <input type="number" id="formGuestCount" class="form-control" min="1" max="10" value="2" required onchange="handleGuestCountChange()">
+                    <span class="field-error" id="errGuests"></span>
+                </div>
+                <div class="form-group">
+                    <label>Room Allocation</label>
+                    <select id="formRoomSelect" class="form-control" required onchange="recalculateDynamicPrice()">
+                        <option value="1">Suite 01: Upper Mezzanine Loft</option>
+                        <option value="2">Suite 02: Ground Veranda Suite</option>
+                        <option value="3">Entire Lodge Buyout (Both Suites)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="formFirstName" class="form-control" placeholder="John" required>
+                    <span class="field-error" id="errFirstName"></span>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="formLastName" class="form-control" placeholder="Doe" required>
+                    <span class="field-error" id="errLastName"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Guest Email</label>
+                    <input type="email" id="formEmail" class="form-control" placeholder="john@example.com" required>
+                    <span class="field-error" id="errEmail"></span>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="formPhone" class="form-control" placeholder="+94 77 123 4567" required>
+                    <span class="field-error" id="errPhone"></span>
+                </div>
+            </div>
+
+            <!-- Live Dynamic Pricing Display (Member 2 Engine) -->
+            <div class="pricing-breakdown-card">
+                <div class="breakdown-row">
+                    <span>Stay Duration</span>
+                    <strong id="pricingNightsCount">0 Nights</strong>
+                </div>
+                <div class="breakdown-row">
+                    <span>Rate Tier Calculation</span>
+                    <span id="pricingTierStatus">Standard Base Rate</span>
+                </div>
+                <div class="breakdown-row breakdown-total">
+                    <span>Total Stay Cost</span>
+                    <span id="pricingLiveTotal">Calculating...</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btnProceedPayment" style="width: 100%;">
+                Proceed to Payment ➔
+            </button>
+            <p id="submissionStatus" class="submission-notice"></p>
+        </form>
+    </div>
+</div>
+
+<!-- ================= FOOTER & SOCIAL LINKS ================= -->
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <h3>The Loft by the Lake</h3>
+                <p>An architecturally crafted sanctuary nestled by tranquil waters. Rooted in restorative stillness, slow gastronomy, and timeless luxury retreat living.</p>
+            </div>
+            <div class="footer-col">
+                <h5>Guest Amenities</h5>
+                <ul>
+                    <li><a href="#experiences">Dawn Wooden Canoe Tours</a></li>
+                    <li><a href="#experiences">Artisanal Clay-Pot Dining</a></li>
+                    <li><a href="#experiences">Lake Bund Village Cycling</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h5>Quick Navigation</h5>
+                <ul>
+                    <li><a href="#lofts">Suites Overview</a></li>
+                    <li><a href="#calendar">Live Calendar</a></li>
+                    <li><a href="/cancellation">Manage Reservation</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Social Media Icons Strip -->
+        <div class="social-strip">
+            <a href="https://facebook.com" class="social-circle-btn social-fb" target="_blank" aria-label="Facebook">f</a>
+            <a href="https://instagram.com" class="social-circle-btn social-ig" target="_blank" aria-label="Instagram">📸</a>
+            <a href="https://linkedin.com" class="social-circle-btn social-in" target="_blank" aria-label="LinkedIn">in</a>
+            <a href="https://youtube.com" class="social-circle-btn social-yt" target="_blank" aria-label="YouTube">▶</a>
+        </div>
+
+        <div class="footer-bottom">
+            <span>&copy; 2026 The Loft by the Lake Boutique Hotel. All rights reserved.</span>
+            <span>Kurunegala, Central Lowlands, Sri Lanka</span>
+        </div>
+    </div>
+</footer>
+
+<!-- ================= CORE SCRIPTS ================= -->
+<script src="js/calendar-pricing.js"></script>
+<script src="js/rooms-intake.js"></script>
+<script src="js/showcase-reviews.js"></script>
+
+<script>
+    const heroAlbum = [
+        { src: 'images/hero/aerial-paddy.jpg', caption: 'Aerial View: The Loft Nestled Among Emerald Paddy Fields' },
+        { src: 'images/hero/front-exterior.jpg', caption: 'The Loft by the Lake Sanctuary Frontage' },
+        { src: 'images/hero/dining-left.jpg', caption: 'Open Living & Dining Pavilion' },
+        { src: 'images/hero/dining-right.jpg', caption: 'Breezy Shaded Lounge for Stillness & Reflection' },
+        { src: 'images/hero/village-kitchen.jpg', caption: 'Traditional Country Kitchen' }
+    ];
+
+    const roomGalleries = {
+        1: [
+            { src: 'images/rooms/room1_fullView.JPG', caption: 'Suite 01: Overall Layout with Earthen Walls & Loft Ladder' },
+            { src: 'images/rooms/room1_loft.JPG', caption: 'Suite 01: Spacious Upper Mezzanine Loft Bed Area' },
+            { src: 'images/rooms/room1_pic2.JPG', caption: 'Suite 01: Ground Floor Sleeping Arrangement' },
+            { src: 'images/rooms/room1_bathroom.JPG', caption: 'Suite 01: Private Ensuite Bathroom' }
+        ],
+        2: [
+            { src: 'images/rooms/room2_fullView.JPG', caption: 'Suite 02: Overall Room View & Access to Mezzanine' },
+            { src: 'images/rooms/room2_pic2.JPG', caption: 'Suite 02: Ground Floor Sleeping Area' },
+            { src: 'images/rooms/room2_pic1.JPG', caption: 'Suite 02: Ground Floor Bed Setup' },
+            { src: 'images/rooms/room2_bathroom.JPG', caption: 'Suite 02: Private Ensuite Bathroom' }
+        ]
+    };
+
+    window.openRoomGallery = function (roomId, photoIndex) {
+        const gallery = roomGalleries[roomId];
+        if (!gallery) return;
+
+        heroAlbum.length = 0;
+        gallery.forEach(item => heroAlbum.push(item));
+        openGalleryModal(photoIndex);
+    };
+
+    let currentSlideIndex = 0;
+
+    function openGalleryModal(index) {
+        currentSlideIndex = index;
+        updateGalleryModal();
+        document.getElementById('heroGalleryModal').classList.add('active');
+    }
+
+    function closeGalleryModal() {
+        document.getElementById('heroGalleryModal').classList.remove('active');
+    }
+
+    function changeGallerySlide(direction) {
+        currentSlideIndex = (currentSlideIndex + direction + heroAlbum.length) % heroAlbum.length;
+        updateGalleryModal();
+    }
+
+    function updateGalleryModal() {
+        const item = heroAlbum[currentSlideIndex];
+        const imgEl = document.getElementById('galleryModalActiveImg');
+        const capEl = document.getElementById('galleryModalCaption');
+
+        if (imgEl && capEl && item) {
+            imgEl.src = item.src;
+            capEl.innerText = `${item.caption} (${currentSlideIndex + 1} of ${heroAlbum.length})`;
+        }
+    }
+
+    // Keyboard navigation & backdrop click dismissal
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('heroGalleryModal');
+        if (!modal || !modal.classList.contains('active')) return;
+        if (e.key === 'Escape') closeGalleryModal();
+        if (e.key === 'ArrowLeft') changeGallerySlide(-1);
+        if (e.key === 'ArrowRight') changeGallerySlide(1);
+    });
+</script>
+</body>
+</html>
