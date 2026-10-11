@@ -8,6 +8,9 @@ import com.loft.hotel.repository.CancellationRepository;
 import com.loft.hotel.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +19,9 @@ import java.util.UUID;
 
 @Service
 public class CancellationService {
+
+    @PersistenceContext
+    private EntityManager em;
 
     private final CancellationRepository cancellationRepository;
     private final ReservationRepository reservationRepository;
@@ -142,17 +148,33 @@ public class CancellationService {
     }
 
     // ---------- helpers ----------
+
     private Reservation activeReservation(Integer reservationId) {
-        if (reservationId == null) throw new IllegalArgumentException("Reservation ID is required.");
-        Reservation r = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Reservation not found: " + reservationId));
+        if (reservationId == null) {
+            throw new IllegalArgumentException("Reservation ID is required.");
+        }
+        Reservation r = em.find(
+                Reservation.class,
+                reservationId,
+                LockModeType.PESSIMISTIC_WRITE
+        );
+
+        if (r == null) {
+            throw new ResourceNotFoundException(
+                    "Reservation not found: " + reservationId
+            );
+        }
+
         if (r.getReservationStatus() != ReservationStatus.PENDING
                 && r.getReservationStatus() != ReservationStatus.CONFIRMED) {
-            throw new IllegalStateException("This reservation cannot be cancelled.");
+            throw new IllegalStateException(
+                    "Only pending or confirmed reservations can be cancelled."
+            );
         }
+
         return r;
     }
+
 
     private Cancellation create(
             Reservation r,
