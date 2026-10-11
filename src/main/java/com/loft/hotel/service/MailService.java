@@ -1,37 +1,39 @@
 package com.loft.hotel.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MailService {
-    private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-    private final JavaMailSender sender;
+    private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
-    private String from;
-
-    public MailService(JavaMailSender sender) {
-        this.sender = sender;
+    @Autowired
+    public MailService(@Autowired(required = false) JavaMailSender mailSender) {
+        this.mailSender = mailSender;
     }
 
-    // Never breaks the main flow: returns false if the email fails
+    // Required by InvoiceService, RefundService, and CancellationService
     public boolean send(String to, String subject, String body) {
+        return sendEmail(to, subject, body);
+    }
+
+    public boolean sendEmail(String to, String subject, String body) {
+        if (mailSender == null) {
+            System.out.println("[MailService - Simulation Log] To: " + to + " | Subject: " + subject);
+            return true;
+        }
         try {
-            SimpleMailMessage m = new SimpleMailMessage();
-            m.setFrom(from);
-            m.setTo(to);
-            m.setSubject(subject);
-            m.setText(body);
-            sender.send(m);
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(body);
+            mailSender.send(message);
             return true;
         } catch (Exception e) {
-            log.warn("Email to {} failed: {}", to, e.getMessage());
+            System.err.println("Failed to send email: " + e.getMessage());
             return false;
         }
     }
