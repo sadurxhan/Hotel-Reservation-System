@@ -12,7 +12,7 @@ public class Cancellation {
     @Column(name = "cancellation_id", length = 40)
     private String cancellationId;
 
-    @Column(name = "reservation_id", nullable = false, unique = true)
+    @Column(name = "reservation_id", nullable = false)
     private Integer reservationId;
 
     @CreationTimestamp

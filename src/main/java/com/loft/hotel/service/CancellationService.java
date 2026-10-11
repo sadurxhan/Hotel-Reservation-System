@@ -6,14 +6,12 @@ import com.loft.hotel.entity.ReservationStatus;
 import com.loft.hotel.exception.ResourceNotFoundException;
 import com.loft.hotel.repository.CancellationRepository;
 import com.loft.hotel.repository.ReservationRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -156,28 +154,44 @@ public class CancellationService {
         return r;
     }
 
-    private Cancellation create(Reservation r, Cancellation.RequestedBy by, String reason,
-                                Cancellation.CancellationStatus status) {
+    private Cancellation create(
+            Reservation r,
+            Cancellation.RequestedBy by,
+            String reason,
+            Cancellation.CancellationStatus status) {
+
         if (reason == null || reason.trim().isEmpty()) {
             throw new IllegalArgumentException("Cancellation reason is required.");
         }
-        Optional<Cancellation> existing = cancellationRepository.findByReservationId(r.getReservationId());
-        if (existing.isPresent()) {
-            Cancellation old = existing.get();
-            if (old.getCancellationStatus() == Cancellation.CancellationStatus.REQUESTED) {
-                throw new IllegalStateException("A cancellation request is already pending.");
+
+        // Get all previous cancellation records for this reservation.
+        List<Cancellation> existing =
+                cancellationRepository.findAllByReservationId(
+                        r.getReservationId());
+
+        // Preserve history and prevent duplicate active requests.
+        for (Cancellation old : existing) {
+            if (old.getCancellationStatus()
+                    == Cancellation.CancellationStatus.REQUESTED) {
+                throw new IllegalStateException(
+                        "A cancellation request is already pending.");
             }
-            if (old.getCancellationStatus() == Cancellation.CancellationStatus.APPROVED) {
-                throw new IllegalStateException("This reservation has already been cancelled.");
+
+            if (old.getCancellationStatus()
+                    == Cancellation.CancellationStatus.APPROVED) {
+                throw new IllegalStateException(
+                        "This reservation has already been cancelled.");
             }
-            // REJECTED: reservation_id is UNIQUE, so remove the old row to allow a new request
-            // (this does not preserve cancellation history)
-            cancellationRepository.delete(old);
-            cancellationRepository.flush();
         }
+
+        // Do not delete rejected records.
         return cancellationRepository.save(new Cancellation(
-                UUID.randomUUID().toString(), r.getReservationId(), by,
-                reason.trim(), status));
+                UUID.randomUUID().toString(),
+                r.getReservationId(),
+                by,
+                reason.trim(),
+                status
+        ));
     }
 
     // Shared by guest approval and direct admin cancellation:

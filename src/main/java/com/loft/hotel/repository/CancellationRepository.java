@@ -9,6 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface CancellationRepository extends JpaRepository<Cancellation, String> {
-    Optional<Cancellation> findByReservationId(Integer reservationId);
-    List<Cancellation> findByCancellationStatus(Cancellation.CancellationStatus status);
+    // Retrieves all cancellation records for a reservation.
+    List<Cancellation> findAllByReservationId(Integer reservationId);
+
+    // Retrieves cancellation records by status.
+    List<Cancellation> findByCancellationStatus(
+            Cancellation.CancellationStatus status);
 }
