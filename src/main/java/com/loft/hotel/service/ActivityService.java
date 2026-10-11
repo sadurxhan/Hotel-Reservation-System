@@ -67,4 +67,14 @@ public class ActivityService {
         return activityRepository.save(activity);
     }
 
+    // Flips an activity on/off for the public website.
+    // true -> false (hidden from guests), false -> true (shown again)
+    public Activity toggleActive(Integer activityId) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new RuntimeException("Activity not found"));
+        // Boolean.TRUE.equals(...) is safe even if the value is null
+        activity.setActive(!Boolean.TRUE.equals(activity.getActive()));
+        return activityRepository.save(activity);
+    }
+
 }

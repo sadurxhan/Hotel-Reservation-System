@@ -70,4 +70,15 @@ public class MenuShowcaseService {
         item.setFileUrl(url);
         return menuShowcaseRepository.save(item);
     }
+
+    // Flips a meal on/off for the public menu page.
+// true -> false (hidden from guests), false -> true (shown again)
+    public MenuShowcase toggleAvailable(Integer menuId) {
+        MenuShowcase item = menuShowcaseRepository.findById(menuId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found"));
+        // Boolean.TRUE.equals(...) is safe even if the value is null
+        item.setAvailable(!Boolean.TRUE.equals(item.getAvailable()));
+        return menuShowcaseRepository.save(item);
+    }
+
 }
