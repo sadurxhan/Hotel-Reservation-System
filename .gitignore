@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### not be pushed to github ###
+uploads/

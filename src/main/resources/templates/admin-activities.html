@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Activities</title>
+    <style>
+        body { font-family: Georgia, serif; background: #f5f0eb; margin: 0; padding: 40px; }
+        .wrap { max-width: 1000px; margin: 0 auto; }
+        .box { background: white; border-radius: 8px; padding: 24px 30px; margin-bottom: 24px; }
+        h1, h2 { margin-top: 0; }
+        input[type=text], textarea { width: 100%; padding: 9px; margin: 6px 0 12px; border: 1px solid #ccc;
+            border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        button { padding: 8px 14px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 14px; }
+        .primary { background: #6b1e3c; }
+        .hide    { background: #b8823a; }
+        .show    { background: #3f7d5c; }
+        .delete  { background: #a33; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+        img.thumb { width: 120px; height: 80px; object-fit: cover; border-radius: 4px; display: block; }
+        .nophoto { width: 120px; height: 80px; background: #eee; color: #888; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; color: white; font-size: 12px; }
+        .badge.on  { background: #3f7d5c; }
+        .badge.off { background: #999; }
+        tr.off-row td.info { opacity: 0.55; }   /* hidden activities look faded */
+        .actions form { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="box">
+        <h1>Manage Activities</h1>
+        <p>Guests only see activities marked <b>Showing</b>. Use "Hide from website" for an activity
+            that isn't available today, and "Show on website" to bring it back.
+            <a th:href="@{/activities}" target="_blank">View the public page</a></p>
+    </div>
+
+    <!-- Add a new activity. enctype="multipart/form-data" is REQUIRED for file uploads. -->
+    <div class="box">
+        <h2>Add a new activity</h2>
+        <form th:action="@{/admin/activities/add}" method="post" enctype="multipart/form-data">
+            <label>Title</label>
+            <input type="text" name="title" required>
+
+            <label>Description</label>
+            <textarea name="activityDescription" rows="3" required></textarea>
+
+            <label>Price note</label>
+            <input type="text" name="pricingNote" placeholder="e.g. Complimentary for guests" required>
+
+            <label>Photo (optional)</label><br>
+            <input type="file" name="photo" accept="image/*">
+            <br><br>
+            <button type="submit" class="primary">Add activity</button>
+        </form>
+    </div>
+
+    <!-- All activities, including hidden ones -->
+    <div class="box">
+        <h2>All activities</h2>
+        <table>
+            <tr><th>Photo</th><th>Activity</th><th>Status</th><th>Actions</th></tr>
+
+            <!-- th:each repeats this row for every activity. th:classappend adds "off-row"
+                 to hidden ones so they look faded -->
+            <tr th:each="a : ${activities}" th:classappend="${!a.active} ? 'off-row'">
+
+                <td>
+                    <img class="thumb" th:if="${a.imageUrl != null}" th:src="${a.imageUrl}" alt="photo">
+                    <div class="nophoto" th:if="${a.imageUrl == null}">No photo</div>
+                </td>
+
+                <td class="info">
+                    <b th:text="${a.title}">Title</b><br>
+                    <span th:text="${a.activityDescription}">Description</span><br>
+                    <i th:text="${a.pricingNote}">Price</i>
+                </td>
+
+                <td>
+                    <!-- th:if shows the tag when true, th:unless when false -->
+                    <span class="badge on"  th:if="${a.active}">Showing</span>
+                    <span class="badge off" th:unless="${a.active}">Hidden</span>
+                </td>
+
+                <td class="actions">
+                    <!-- Hide / Show -->
+                    <form th:action="@{/admin/activities/{id}/toggle(id=${a.activityId})}" method="post">
+                        <button type="submit" class="hide" th:if="${a.active}">Hide from website</button>
+                        <button type="submit" class="show" th:unless="${a.active}">Show on website</button>
+                    </form>
+
+                    <!-- Add or replace photo -->
+                    <form th:action="@{/admin/activities/{id}/image(id=${a.activityId})}"
+                          method="post" enctype="multipart/form-data">
+                        <input type="file" name="photo" accept="image/*" required>
+                        <button type="submit" class="primary">Upload photo</button>
+                    </form>
+
+                    <!-- Delete (asks "are you sure?" first) -->
+                    <form th:action="@{/admin/activities/{id}/delete(id=${a.activityId})}" method="post"
+                          onsubmit="return confirm('Delete this activity permanently?');">
+                        <button type="submit" class="delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>

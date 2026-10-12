@@ -54,4 +54,27 @@ public class ActivityService {
         // Used by admin — removing an activity entirely.
         activityRepository.deleteById(activityId);
     }
+
+    // Public Activities page: only activities marked active
+    public List<Activity> getActiveActivities() {
+        return activityRepository.findActiveActivities();
+    }
+
+    public Activity updateImageUrl(Integer activityId, String url) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new RuntimeException("Activity not found"));
+        activity.setImageUrl(url);
+        return activityRepository.save(activity);
+    }
+
+    // Flips an activity on/off for the public website.
+    // true -> false (hidden from guests), false -> true (shown again)
+    public Activity toggleActive(Integer activityId) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new RuntimeException("Activity not found"));
+        // Boolean.TRUE.equals(...) is safe even if the value is null
+        activity.setActive(!Boolean.TRUE.equals(activity.getActive()));
+        return activityRepository.save(activity);
+    }
+
 }
