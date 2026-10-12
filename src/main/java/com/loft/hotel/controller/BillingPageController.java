@@ -82,9 +82,8 @@ public class BillingPageController {
     // Placeholder: point this at your booking / home page once it exists.
     @GetMapping("/")
     public String home() {
-        return "redirect:/checkout?reservationId=1";
+        return "index";
     }
-
     // Only the fields the cancellation form needs (no guest name, email or phone).
     public record BookingSummary(Integer reservationId,
                                  LocalDate checkInDate,

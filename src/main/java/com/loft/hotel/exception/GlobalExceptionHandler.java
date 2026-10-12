@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-// Only for REST controllers
+// Applies across all REST controllers project-wide
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalExceptionHandler {
 
@@ -26,6 +27,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // Photo or file upload bigger than the configured multipart limit
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleTooBig(MaxUploadSizeExceededException ex) {
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "File is too large (maximum allowed size is 5MB).");
     }
 
     // Missing request header/parameter (e.g. no X-Admin-Key) or a wrong enum/number value
@@ -39,7 +46,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    // e.g. the unique constraint on refund.payment_id when two requests race
+    // Database unique constraint violations
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> duplicate(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
@@ -51,20 +58,20 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "You are not authorized to perform this action.");
     }
 
-    // Only genuine "not found" cases become 404 (Optional.orElseThrow() throws NoSuchElementException)
+    // 404 Not Found
     @ExceptionHandler({ResourceNotFoundException.class, NoSuchElementException.class})
     public ResponseEntity<Map<String, Object>> notFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    // Keep the status the code chose instead of letting the fallback turn it into a 500
+    // Custom HTTP status exceptions
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> responseStatus(ResponseStatusException ex) {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
         return build(status, ex.getReason());
     }
 
-    // Anything unexpected: log the details, send the client a generic message
+    // Catch-all fallback
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> unexpected(Exception ex) {
         log.error("Unhandled exception in REST controller", ex);
