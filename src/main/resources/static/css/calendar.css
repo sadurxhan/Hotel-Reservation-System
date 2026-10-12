@@ -1,0 +1,232 @@
+/* ==========================================================================
+   MEMBER 2: CALENDAR AVAILABILITY & DYNAMIC PRICING STYLES
+   ========================================================================== */
+
+.calendar-section {
+  background-color: var(--bg-muted, #F4EFE6);
+  padding: 80px 0;
+}
+
+.calendar-card {
+  background-color: #FFFFFF;
+  border: 1px solid #EFE9DE;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(27, 59, 43, 0.08);
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.calendar-header h3 {
+  font-family: var(--font-serif, "Playfair Display", Georgia, serif);
+  font-size: 1.6rem;
+  color: #1B3B2B;
+  font-weight: 600;
+  margin: 0;
+}
+
+.calendar-nav-btn {
+  background-color: #FBF8F2;
+  border: 1px solid #E7E0D3;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #1F2421;
+}
+
+.calendar-nav-btn:hover {
+  background-color: #1B3B2B;
+  color: #FFFFFF;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-bottom: 25px;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #6B726C;
+}
+
+.chip-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.chip-avail {
+  background-color: #E8F5E9;
+  border: 1px solid #A7F3D0;
+}
+
+.chip-block {
+  background-color: #FEE2E2;
+  border: 1px solid #FECACA;
+}
+
+.chip-select {
+  background-color: #1B3B2B;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.weekday-label {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8A7352;
+  padding-bottom: 12px;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.cal-empty {
+  cursor: default;
+}
+
+.cal-past {
+  color: #CBD5E1;
+  background-color: #F8FAFC;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.cal-available {
+  background-color: #E8F5E9;
+  color: #065F46;
+  border-color: #D1FAE5;
+}
+
+.cal-available:hover {
+  background-color: #D4EDDA;
+  transform: scale(1.04);
+}
+
+.cal-blocked {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  border-color: #FECACA;
+}
+
+/* Endpoint Selected Dates */
+.cal-selected {
+  background-color: #1B3B2B !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(27, 59, 43, 0.3);
+}
+
+/* Clear, Rich Forest Tint on Intermediate Stay Nights */
+.cal-range-mid {
+  background-color: #C8E6C9 !important;
+  color: #1B3B2B !important;
+  font-weight: 700;
+  border-radius: 2px !important;
+}
+
+.calendar-action-bar {
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 1px solid #E7E0D3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.selected-span-text {
+  font-size: 0.95rem;
+  color: #1F2421;
+}
+
+.selected-span-text strong {
+  color: #1B3B2B;
+  font-weight: 600;
+}
+
+.cal-notice-box {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  display: none;
+}
+
+.cal-notice-box.error {
+  display: block;
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+.cal-notice-box.success {
+  display: block;
+  background-color: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
+
+.packages-strip {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.package-badge {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}

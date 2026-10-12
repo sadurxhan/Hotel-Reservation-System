@@ -8,7 +8,6 @@
 <h1>Things To Do</h1>
 
 <div th:each="activity : ${activities}">
-  <img th:if="${activity.imageUrl != null}" th:src="${activity.imageUrl}" width="240" alt="activity photo">
   <h2 th:text="${activity.title}">Sample Title</h2>
   <p th:text="${activity.activityDescription}">Sample Description</p>
   <p th:text="${activity.pricingNote}">Sample Pricing</p>

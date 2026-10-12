@@ -1,0 +1,145 @@
+/* ==========================================================================
+   MEMBER 4: REFINED FORM INPUTS (REVIEWS & INQUIRIES)
+   ========================================================================== */
+
+/* Stacked input groups matching Member 4 design */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 18px;
+    width: 100%;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1B3B2B;
+    margin-bottom: 7px;
+    letter-spacing: 0.2px;
+}
+
+/* Polished full-width inputs matching Member 4 original layout */
+.form-control {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #D8D2C4;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: #2D3748;
+    background-color: #FFFFFF;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: #1B3B2B;
+    box-shadow: 0 0 0 3px rgba(27, 59, 43, 0.12);
+}
+
+.form-control::placeholder {
+    color: #A0AEC0;
+    font-size: 0.88rem;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+}
+
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231B3B2B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+/* Two-column responsive row */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
+/* Container wrappers */
+.write-review-container {
+    background: #FFFFFF;
+    border: 1px solid #EFE9DE;
+    border-radius: 20px;
+    padding: 36px;
+    margin-top: 45px;
+    box-shadow: 0 4px 20px rgba(27, 59, 43, 0.04);
+}
+
+.write-review-container h3 {
+    font-size: 1.6rem;
+    color: #1B3B2B;
+    margin-bottom: 6px;
+    font-family: var(--font-serif, Georgia, serif);
+}
+
+/* Interactive Star Rating Picker */
+.star-picker {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 6px;
+    font-size: 1.6rem;
+}
+
+.star-picker input {
+    display: none;
+}
+
+.star-picker label {
+    color: #D1D5DB;
+    cursor: pointer;
+    margin-bottom: 0 !important;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.star-picker label:hover,
+.star-picker label:hover ~ label,
+.star-picker input:checked ~ label {
+    color: #D4B46A;
+}
+
+.star-picker label:hover {
+    transform: scale(1.15);
+}
+
+/* Submission feedback banners */
+.inquiry-feedback {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    display: none;
+}
+
+.inquiry-feedback.success {
+    display: block;
+    background-color: #E8F5E9;
+    color: #1B5E20;
+    border: 1px solid #C8E6C9;
+}
+
+.inquiry-feedback.error {
+    display: block;
+    background-color: #FFEBEE;
+    color: #C62828;
+    border: 1px solid #FFCDD2;
+}

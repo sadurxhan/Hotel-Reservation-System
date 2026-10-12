@@ -1,7 +1,8 @@
 show databases;
 select database();
+
 -- Creating and selecting the database
-CREATE DATABASE IF NOT EXISTS hotel_reservation_db
+CREATE DATABASE hotel_reservation_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 USE hotel_reservation_db;
@@ -121,7 +122,7 @@ CREATE TABLE cancellation (
 -- Calendar Block table (Availability & iCal)
 
 -- IT25102998
-CREATE TABLE calendar_block (
+CREATE TABLE IF NOT EXISTS calendar_block (
     block_id INT AUTO_INCREMENT PRIMARY KEY,
     blocked_date DATE NOT NULL,
     source VARCHAR(50) NOT NULL DEFAULT 'MANUAL_ADMIN',
@@ -204,17 +205,17 @@ CREATE INDEX idx_rate_override_dates ON rate_override(start_date, end_date);
 -- Base lookup and tables
 
 -- IT25102812
-INSERT INTO guest (guest_id, fname, lname, email, phone_no) VALUES
-(1, 'Sashini', 'Jayasundara', 'sashinij@gmail.com', '+94712345678'),
-(2, 'Nethmi', 'Perera', 'nethmi.p@gmail.com', '+94771234567'),
-(3, 'Vinuthi', 'Silva', 'vinuthi.s@yahoo.com', '+94709876543');
+INSERT INTO guest (fname, lname, email, phone_no) VALUES
+('Sashini', 'Jayasundara', 'sashinij@gmail.com', '+94712345678'),
+('Nethmi', 'Perera', 'nethmi.p@gmail.com', '+94771234567'),
+('Vinuthi', 'Silva', 'vinuthi.s@yahoo.com', '+94709876543');
 
 -- IT25102812
 INSERT INTO room (room_id, room_number, room_type, room_description, capacity, room_status, is_active, tier_id) VALUES
 (1, '101', 'Deluxe Ocean View', 'Spacious king-bed room with sea view', 2, 'AVAILABLE', TRUE, 1),
 (2, '102', 'Standard Double', 'Comfortable double bed room', 2, 'AVAILABLE', TRUE, 2),
-(3, '201', 'Family Suite', 'Two-bedroom suite with living area', 4, 'AVAILABLE', TRUE, 4),
-(4, '202', 'Executive Suite', 'Luxury suite with private balcony', 3, 'MAINTENANCE', TRUE, 4);
+(3, '201', 'Family Suite', 'Two-bedroom suite with living area', 4, 'AVAILABLE', TRUE, NULL),
+(4, '202', 'Executive Suite', 'Luxury suite with private balcony', 3, 'MAINTENANCE', TRUE, NULL);
 
 -- IT25102812
 INSERT INTO room_pricing_tier (tier_id, room_id, guest_count, tier_name, base_rate) VALUES
@@ -238,6 +239,7 @@ INSERT INTO reservation_room_selection (selection_id, reservation_id, room_id, n
 (2, 102, 3, 4, 25000.00),
 (3, 103, 2, 1, 9000.00),
 (4, 104, 1, 2, 15000.00);
+
 
 -- Payment and billing tables
 
@@ -276,6 +278,7 @@ INSERT INTO rate_override (package_name, package_description, start_date, end_da
 ('Weekend Getaway', '15% surcharge for peak weekend bookings', '2026-10-01', '2026-10-31', 1.15, 2, TRUE, NULL),
 ('Long Stay Discount', '10% discount for stays over 5 nights', '2026-11-01', '2026-11-30', 0.90, 5, TRUE, 1);
 
+
 -- Guest experience and inquiries
 
 -- IT25102954
@@ -285,25 +288,22 @@ INSERT INTO inquiry (guest_id, inquiry_subject, message, inquiry_status) VALUES
 (3, 'General Inquiry', 'Is the lake safe for swimming in October?', 'RESOLVED');
 
 -- IT25102954
-INSERT INTO review (review_id, guest_id, rating, review_status, review_date, review_comment) VALUES
-(4, 1, 5, 'APPROVED', '2026-09-15 10:00:00', 'We stayed for two nights with our kids and it was truly a unique experience—we absolutely loved it! The food was delicious, and Mahinda and Sunitha were incredibly warm.'),
-(5, 2, 5, 'APPROVED', '2026-09-22 14:30:00', 'A much-needed detox for our minds. The Loft blended exceptionally well with the stunning beauty of Embogama and the tank. Total stillness.'),
-(6, 3, 5, 'APPROVED', '2026-10-02 09:15:00', 'Waking up to misty mornings on Kuda Wewa and riding bikes through the quiet paddy trails was unforgettable. Truly zero commercial noise.');
+INSERT INTO review (guest_id, rating, review_status, review_comment) VALUES
+(1, 5, 'APPROVED', 'Absolutely stunning views, will come back!'),
+(2, 4, 'PENDING', 'Great stay, breakfast could be better.'),
+(3, 5, 'APPROVED', 'Perfect for a quiet weekend getaway.');
 
 -- IT25102954
-INSERT INTO menu_showcase (menu_id, title, meal_type, meal_description, file_url, is_available) VALUES
-(4, 'Authentic Village Breakfast', 'BREAKFAST', 'Choice of freshly toasted coconut or kurakkan rotti with spicy pol sambol, traditional kiribath with lunu miris, or country kekulu rice with dhal. Served with seasonal fruit and fresh Ceylon tea or coffee.', 'images/menu/roti.jpg', TRUE),
-(5, 'Clay-Pot Country Lunch Feast', 'LUNCH', 'Heirloom rice or water lily (Olu) rice served alongside authentic clay pots of local lake fish, country chicken, breadfruit (del) or cassava, freshly shredded village mallum, and crispy papadam. Finished with curd and treacle.', 'images/menu/A_lunch.jpg', TRUE),
-(6, 'Hearthside Verandah Dinner', 'DINNER', 'Fresh artisanal roast paan with tempered dhal, kurakkan pittu steamed in bamboo with coconut milk gravy and fresh wew maalu (lake fish), or string hoppers served under the night sky.', 'images/menu/lunch_sidedishes.jpg', TRUE);
+INSERT INTO menu_showcase (title, meal_type, meal_description, is_available) VALUES
+('Sri Lankan Rice & Curry', 'LUNCH', 'Steamed rice with four vegetable and meat curries', TRUE),
+('BBQ Dinner by the Lake', 'DINNER', 'Grilled seafood and chicken platter served lakeside', TRUE),
+('Ceylon Breakfast Set', 'BREAKFAST', 'String hoppers, dhal curry, and coconut sambol', TRUE);
 
 -- IT25102954
-INSERT INTO activity (activity_id, title, activity_description, pricing_note, image_url, is_active) VALUES
-(10, 'Lake Bund Cycling', 'Explore quiet gravel bunds, green paddy fields, and morning views towards Galgiriya mountain on our rustic village bicycles.', 'Complimentary with stay', 'images/activities/bicycle1.JPG', TRUE),
-(11, 'Scenic Village & Sunset Walks', 'Take gentle guided or self-guided evening strolls along picturesque paddy fields and ancient tank edges as the sun sets behind the hills.', 'Complimentary / Guided tours available', 'images/activities/Walks1.jpg', TRUE),
-(12, 'Kuda Wewa Kayaking', 'Paddle across calm, glassy waters surrounded by lilies, birdlife, and the peaceful sounds of rural Kurunegala.', 'Complimentary with stay', 'images/activities/Kayak_in_lake.jpg', TRUE),
-(13, 'Sunil Aiya’s Chena & Traditional Tree Hut (Pala)', 'Discover traditional dry-zone Chena farming. Visit rural cultivators and climb traditional treetop huts built by farmers to keep watch.', 'Guided village tour', 'images/activities/pala.jpg', TRUE),
-(14, 'Freshwater Tank Baths in the Village', 'Enjoy a refreshing swim in traditional village water tanks (wewas) like Galketiyagama-wewa, where cool, clean waters offer an authentic rural bathing ritual.', 'Complimentary / Self-guided', 'images/activities/baths_ahatuwewa.JPG', TRUE),
-(15, 'Scenic Hike up Galgiriya Rock Temple', 'Follow serene forest trails up Galgiriya Rock to visit ancient meditation monk ruins, giant rock boulders, and panoramic hillside lookouts over the lowlands.', 'Self-guided & guided trails', 'images/activities/templeRock.JPG', TRUE);
+INSERT INTO activity (title, activity_description, pricing_note, is_active) VALUES
+('Lake Kayaking', 'Paddle around the lake at sunset', 'Complimentary for guests', TRUE),
+('Lakeside Cycling', 'Guided cycling tour around the paddy fields', 'LKR 1,500 per person', TRUE),
+('Sunset Bird Watching', 'Spot local bird species along the shoreline', 'Complimentary for guests', TRUE);
 
 -- ==================================
 -- VERIFICATION & ANALYTICS QUERIES
@@ -393,6 +393,7 @@ SELECT (SELECT SUM(amount) FROM payment WHERE payment_status = 'PAID') AS total_
 (SELECT SUM(amount) FROM payment WHERE payment_status = 'PAID') - 
 COALESCE((SELECT SUM(refund_amount) FROM refund WHERE refund_status = 'REFUNDED'), 0) AS net_revenue;
 
+
 -- ====================================================
 -- queries IT25102998 (Pricing and calendar management)
 -- ====================================================
@@ -434,6 +435,7 @@ WHERE ro.is_active = TRUE;
 DELETE FROM calendar_block 
 WHERE blocked_date < '2026-09-01';
 
+
 -- =============================================
 -- queries IT25102954 (Inquiries and activities)
 -- =============================================
@@ -470,3 +472,4 @@ GROUP BY meal_type;
 SELECT title, activity_description, pricing_note
 FROM activity
 WHERE is_active = TRUE;
+

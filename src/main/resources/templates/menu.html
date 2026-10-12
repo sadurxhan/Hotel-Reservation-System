@@ -11,13 +11,12 @@
 
 <div th:each="item : ${menuItems}">
     <!-- this block repeats once per menu item. -->
-    <img th:if="${item.fileUrl != null}" th:src="${item.fileUrl}" width="240" alt="meal photo"
+
     <h2 th:text="${item.title}">Sample Title</h2>
     <!--  it's a fallback, not what guests will actually see. -->
 
     <p th:text="${item.mealType}">Sample Type</p>
     <p th:text="${item.mealDescription}">Sample Description</p>
-
 
 </div>
 
