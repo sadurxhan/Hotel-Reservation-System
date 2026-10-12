@@ -19,6 +19,7 @@ public class Room {
     private String roomType;
 
     @Column(name = "room_description", columnDefinition = "TEXT")
+
     private String description;
 
     @Column(name = "is_active")

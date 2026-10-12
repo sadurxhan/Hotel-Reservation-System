@@ -25,6 +25,12 @@ public interface CalendarBlockRepository extends JpaRepository<CalendarBlock, In
     // Retrieves calendar blocks for a single room on a specific date. (Used when reservation cancelled release the block date)
     List<CalendarBlock> findByRoom_RoomIdAndBlockedDate(Integer roomId, LocalDate blockedDate);
 
+    // Check to see if a date is already blocked before admin adds a new one
+    boolean existsByRoom_RoomIdAndBlockedDate(Integer roomId, LocalDate blockedDate);
+
+    // Check if any block exists property-wide on a given date
+    boolean existsByBlockedDate(LocalDate blockedDate);
+
     // Check if an external iCal event has already been imported to prevent duplicates
     boolean existsByExternalUid(String externalUid);
 }

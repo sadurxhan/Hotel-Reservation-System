@@ -1,7 +1,9 @@
 package com.loft.hotel.controller;
 
 import com.loft.hotel.entity.CalendarBlock;
+import com.loft.hotel.service.CalendarAdminService;
 import com.loft.hotel.service.CalendarService;
+import com.loft.hotel.service.ICalSyncService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +15,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/calendar")
-@CrossOrigin(origins = "*") // Allows your frontend to call these endpoints
+@CrossOrigin(origins = "*")
 public class CalendarController {
 
     private final CalendarService calendarService;
+    private final CalendarAdminService calendarAdminService;
+    private final ICalSyncService iCalSyncService;
 
-    public CalendarController(CalendarService calendarService) {
+    public CalendarController(CalendarService calendarService,
+                              CalendarAdminService calendarAdminService,
+                              ICalSyncService iCalSyncService) {
         this.calendarService = calendarService;
+        this.calendarAdminService = calendarAdminService;
+        this.iCalSyncService = iCalSyncService;
     }
 
     /**
@@ -63,5 +71,35 @@ public class CalendarController {
 
         List<CalendarBlock> blocks = calendarService.getBlocksForPeriod(startDate, endDate);
         return ResponseEntity.ok(blocks);
+    }
+
+    /**
+     * Endpoint 4: Remove a block on a specific date (Admin unblock feature)
+     * URL: DELETE /api/calendar/block?date=2026-10-15&roomId=1
+     */
+    @DeleteMapping("/block")
+    public ResponseEntity<Void> unblockDate(
+            @RequestParam(required = false) Integer roomId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        calendarAdminService.unblockDate(roomId, date);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Endpoint 5: Manually trigger an external iCal sync
+     * URL: POST /api/calendar/sync-ical
+     */
+    @PostMapping("/sync-ical")
+    public ResponseEntity<Map<String, Object>> triggerIcalSync(
+            @RequestParam String icalUrl,
+            @RequestParam(required = false) Integer roomId,
+            @RequestParam(defaultValue = "Airbnb") String platform) {
+
+        int count = iCalSyncService.syncFromUrl(icalUrl, roomId, platform);
+        return ResponseEntity.ok(Map.of(
+                "status", "SUCCESS",
+                "importedDays", count,
+                "platform", platform
+        ));
     }
 }

@@ -7,3 +7,4 @@ import java.util.Optional;
 public interface GuestRepository extends JpaRepository<Guest, Integer> {
     Optional<Guest> findByEmail(String email);
 }
+

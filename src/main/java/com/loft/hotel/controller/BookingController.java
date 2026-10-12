@@ -16,12 +16,6 @@ public class BookingController {
         this.service = service;
     }
 
-    // Home page
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/book";
-    }
-
     // Show booking form
     @GetMapping("/book")
     public String showForm(Model model) {
@@ -36,19 +30,11 @@ public class BookingController {
             Model model) {
 
         try {
-
-            Reservation saved =
-                    service.createReservation(request);
-
-            return "redirect:/reservations/"
-                    + saved.getReservationId();
-
+            Reservation saved = service.createReservation(request);
+            return "redirect:/reservations/" + saved.getReservationId();
         } catch (IllegalArgumentException e) {
-
             model.addAttribute("error", e.getMessage());
-
             model.addAttribute("bookingRequest", request);
-
             return "booking";
         }
     }
@@ -77,3 +63,4 @@ public class BookingController {
         return "redirect:/reservations/" + id;
     }
 }
+
