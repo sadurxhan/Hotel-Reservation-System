@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Payment | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brand-name">
+            The Loft by the Lake
+        </div>
+
+        <div class="brand-subtitle">
+            Hotel Reservation System
+        </div>
+
+    </div>
+
+    <nav>
+        <a href="/static">
+            Home
+        </a>
+    </nav>
+
+</header>
+
+
+<main class="page-container">
+
+    <div class="page-heading">
+
+        <p class="eyebrow">
+            SECURE CHECKOUT
+        </p>
+
+        <h1>
+            Complete Your Payment
+        </h1>
+
+        <p class="description">
+            Review your reservation details and
+            continue to secure your booking.
+        </p>
+
+    </div>
+
+
+    <div class="billing-grid">
+
+
+        <!-- RESERVATION DETAILS -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <h2>
+                    Reservation Details
+                </h2>
+
+                <span class="status-badge">
+                    Pending Payment
+                </span>
+
+            </div>
+
+
+            <div class="details">
+
+                <div class="detail-row">
+
+                    <span>
+                        Reservation ID
+                    </span>
+
+                    <strong
+                            th:text="${reservation.reservationId}">
+                        101
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>
+                        Check-in
+                    </span>
+
+                    <strong
+                            th:text="${reservation.checkInDate}">
+                        2026-10-01
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>
+                        Check-out
+                    </span>
+
+                    <strong
+                            th:text="${reservation.checkOutDate}">
+                        2026-10-07
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>
+                        Number of Guests
+                    </span>
+
+                    <strong
+                            th:text="${reservation.numberOfGuests}">
+                        2
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row total-row">
+
+                    <span>
+                        Total Amount
+                    </span>
+
+                    <strong>
+
+                        LKR
+
+                        <span
+                                th:text="${reservation.totalAmount}">
+                            900.00
+                        </span>
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- PAYMENT -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <h2>
+                    Payment
+                </h2>
+
+                <span class="secure-label">
+                    SECURE
+                </span>
+
+            </div>
+
+
+            <div class="payment-amount">
+
+                <span>
+                    Amount to Pay
+                </span>
+
+                <strong>
+
+                    LKR
+
+                    <span
+                            th:text="${reservation.totalAmount}">
+                        900.00
+                    </span>
+
+                </strong>
+
+            </div>
+
+
+            <form id="paymentForm">
+
+                <input
+                        type="hidden"
+                        id="reservationId"
+                        th:value="${reservation.reservationId}">
+
+
+                <div class="form-group">
+
+                    <label for="paymentMethod">
+                        Payment Method
+                    </label>
+
+                    <select
+                            id="paymentMethod"
+                            required>
+
+                        <option value="Credit_Card">
+                            Credit Card
+                        </option>
+
+                        <option value="Debit_Card">
+                            Debit Card
+                        </option>
+
+                        <option value="Online_Banking">
+                            Online Banking
+                        </option>
+
+                        <option value="QR_Payment">
+                            QR Payment
+                        </option>
+
+                    </select>
+
+                    <small>
+                        Continue to our secure
+                        demonstration payment gateway.
+                    </small>
+
+                </div>
+
+
+                <button
+                        type="submit"
+                        id="payButton"
+                        class="primary-button">
+
+                    Continue to Payment
+
+                </button>
+
+            </form>
+
+
+            <div
+                    id="message"
+                    class="message error hidden">
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+
+<script>
+
+    const paymentForm =
+        document.getElementById("paymentForm");
+
+    const payButton =
+        document.getElementById("payButton");
+
+    const message =
+        document.getElementById("message");
+
+
+    paymentForm.addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const reservationId =
+                document.getElementById(
+                    "reservationId"
+                ).value;
+
+
+            const paymentMethod =
+                document.getElementById(
+                    "paymentMethod"
+                ).value;
+
+
+            payButton.disabled = true;
+
+            payButton.textContent =
+                "Creating Payment...";
+
+
+            message.classList.add("hidden");
+
+            message.textContent = "";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/payments"
+                        + "?reservationId="
+                        + encodeURIComponent(
+                            reservationId
+                        )
+                        + "&paymentMethod="
+                        + encodeURIComponent(
+                            paymentMethod
+                        ),
+                        {
+                            method: "POST"
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    let errorMessage =
+                        "Unable to create payment.";
+
+                    try {
+
+                        const error =
+                            await response.json();
+
+                        errorMessage =
+                            error.message
+                            || errorMessage;
+
+                    } catch (e) {
+
+                        // Use default message
+
+                    }
+
+                    throw new Error(
+                        errorMessage
+                    );
+                }
+
+
+                const payment =
+                    await response.json();
+
+
+                /*
+                 * Open mock payment gateway.
+                 */
+
+                window.location.href =
+                    "/mock-gateway"
+                    + "?paymentId="
+                    + encodeURIComponent(
+                        payment.paymentId
+                    );
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                message.textContent =
+                    error.message;
+
+                message.classList.remove(
+                    "hidden"
+                );
+
+                payButton.disabled = false;
+
+                payButton.textContent =
+                    "Continue to Payment";
+            }
+
+        }
+    );
+
+</script>
+
+</body>
+
+</html>

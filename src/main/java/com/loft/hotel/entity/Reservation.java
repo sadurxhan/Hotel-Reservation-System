@@ -87,4 +87,5 @@ public class Reservation {
     // That rule-checking belongs in ReservationService.confirm() / .cancel(), not here.
     public void setReservationStatus(ReservationStatus reservationStatus) {
         this.reservationStatus = reservationStatus; }
+
 }

@@ -37,7 +37,14 @@ public class CalendarBlock {
         this.room = room;
     }
 
-    // getters and setters
+    public CalendarBlock(LocalDate blockedDate, String source, String externalUid, Room room) {
+        this.blockedDate = blockedDate;
+        this.source = source;
+        this.externalUid = externalUid;
+        this.room = room;
+    }
+
+    // Getters and Setters
     public Integer getBlockId() {
         return blockId;
     }

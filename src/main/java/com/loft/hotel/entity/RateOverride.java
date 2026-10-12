@@ -44,7 +44,7 @@ public class RateOverride {
 
     public RateOverride() {}
 
-    // Getters and setters
+    // Getters and Setters
     public Integer getRateId() {
         return rateId;
     }

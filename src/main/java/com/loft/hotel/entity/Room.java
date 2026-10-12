@@ -18,8 +18,7 @@ public class Room {
     @Column(name = "room_type", nullable = false, length = 50)
     private String roomType;
 
-    @Column(name = "room_description", columnDefinition = "TEXT")
-
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "is_active")

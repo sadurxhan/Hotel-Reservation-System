@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Refund | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+
+</head>
+
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        <span class="brand-name">The Loft</span>
+        <span class="brand-subtitle">by the Lake</span>
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+    <section class="page-heading">
+
+        <p class="eyebrow">
+            REFUND MANAGEMENT
+        </p>
+
+        <h1>
+            Refund details
+        </h1>
+
+        <p class="description">
+            Review and process the refund associated with the approved cancellation.
+        </p>
+
+    </section>
+
+
+    <section class="card refund-card">
+
+        <div class="details">
+
+            <div class="detail-row">
+
+                <span>Refund ID</span>
+
+                <strong th:text="${refund.refundId}">
+                    refund-id
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>Payment ID</span>
+
+                <strong th:text="${refund.paymentId}">
+                    payment-id
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>Refund amount</span>
+
+                <strong>
+
+                    LKR
+
+                    <span th:text="${#numbers.formatDecimal(
+                        refund.refundAmount,
+                        2,
+                        2
+                    )}">
+                        60000.00
+                    </span>
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>Status</span>
+
+                <span id="refundStatus"
+                      class="status-badge"
+                      th:text="${refund.refundStatus}">
+                    PENDING
+                </span>
+
+            </div>
+
+
+            <div class="reason-box">
+
+                <span>
+                    Refund reason
+                </span>
+
+                <p th:text="${refund.refundReason}">
+                    Refund policy reason
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div id="refundMessage"
+             class="message hidden">
+        </div>
+
+
+        <div class="refund-actions">
+
+            <button th:if="${refund.refundStatus.name() == 'PENDING'}"
+                    type="button"
+                    id="approveButton"
+                    class="primary-button">
+
+                Approve Refund
+
+            </button>
+
+
+            <button th:if="${refund.refundStatus.name() == 'PENDING'}"
+                    type="button"
+                    id="rejectButton"
+                    class="danger-button">
+
+                Reject Refund
+
+            </button>
+
+
+            <button th:if="${refund.refundStatus.name() == 'APPROVED'}"
+                    type="button"
+                    id="refundedButton"
+                    class="success-button">
+
+                Mark as Refunded
+
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script th:inline="javascript">
+
+    const refundId =
+        /*[[${refund.refundId}]]*/ "";
+
+
+    const message =
+        document.getElementById(
+            "refundMessage"
+        );
+
+
+    const statusElement =
+        document.getElementById(
+            "refundStatus"
+        );
+
+
+    const approveButton =
+        document.getElementById(
+            "approveButton"
+        );
+
+
+    const rejectButton =
+        document.getElementById(
+            "rejectButton"
+        );
+
+
+    const refundedButton =
+        document.getElementById(
+            "refundedButton"
+        );
+
+
+    if (approveButton) {
+
+        approveButton.addEventListener(
+            "click",
+            async function () {
+
+                await updateRefund(
+                    `/api/refunds/${encodeURIComponent(
+                        refundId
+                    )}/approve`,
+                    "Refund approved."
+                );
+
+            }
+        );
+
+    }
+
+
+    if (rejectButton) {
+
+        rejectButton.addEventListener(
+            "click",
+            async function () {
+
+                await updateRefund(
+                    `/api/refunds/${encodeURIComponent(
+                        refundId
+                    )}/reject`,
+                    "Refund rejected."
+                );
+
+            }
+        );
+
+    }
+
+
+    if (refundedButton) {
+
+        refundedButton.addEventListener(
+            "click",
+            async function () {
+
+                await updateRefund(
+                    `/api/refunds/${encodeURIComponent(
+                        refundId
+                    )}/refunded`,
+                    "Refund marked as completed."
+                );
+
+            }
+        );
+
+    }
+
+
+    async function updateRefund(
+        url,
+        successMessage
+    ) {
+
+        try {
+
+            const response =
+                await fetch(
+                    url,
+                    {
+                        method: "POST"
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.message ||
+                    "Refund operation failed."
+                );
+
+            }
+
+
+            statusElement.textContent =
+                data.refundStatus;
+
+
+            showRefundMessage(
+                successMessage,
+                "success"
+            );
+
+
+            setTimeout(
+                function () {
+                    window.location.reload();
+                },
+                800
+            );
+
+
+        } catch (error) {
+
+            showRefundMessage(
+                error.message,
+                "error"
+            );
+
+        }
+
+    }
+
+
+    function showRefundMessage(
+        text,
+        type
+    ) {
+
+        message.textContent = text;
+
+        message.classList.remove(
+            "hidden",
+            "success",
+            "error"
+        );
+
+        message.classList.add(type);
+
+    }
+
+</script>
+
+</body>
+</html>

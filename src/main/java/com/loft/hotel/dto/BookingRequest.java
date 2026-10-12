@@ -62,4 +62,5 @@ public class BookingRequest {
     public void setNumberOfGuests(Integer numberOfGuests) {
         this.numberOfGuests = numberOfGuests;
     }
+
 }

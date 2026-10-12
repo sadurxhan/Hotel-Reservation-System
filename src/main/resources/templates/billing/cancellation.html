@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Cancellation | The Loft by the Lake</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/billing.css}">
+
+</head>
+
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+        <span class="brand-name">The Loft</span>
+        <span class="brand-subtitle">by the Lake</span>
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+    <section class="page-heading">
+
+        <p class="eyebrow">
+            RESERVATION CANCELLATION
+        </p>
+
+        <h1>
+            Request cancellation
+        </h1>
+
+        <p class="description">
+            Submit a cancellation request for your reservation.
+        </p>
+
+    </section>
+
+
+    <section class="billing-grid">
+
+
+        <!-- Reservation -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>
+                    Reservation Details
+                </h2>
+
+            </div>
+
+
+            <div class="details">
+
+                <div class="detail-row">
+
+                    <span>Reservation ID</span>
+
+                    <strong th:text="${reservation.reservationId}">
+                        101
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>Check-in</span>
+
+                    <strong th:text="${reservation.checkInDate}">
+                        2026-10-10
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>Check-out</span>
+
+                    <strong th:text="${reservation.checkOutDate}">
+                        2026-10-12
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-row">
+
+                    <span>Reservation status</span>
+
+                    <span class="status-badge"
+                          th:text="${reservation.reservationStatus}">
+                        CONFIRMED
+                    </span>
+
+                </div>
+
+
+                <div class="detail-row total-row">
+
+                    <span>Total paid amount</span>
+
+                    <strong>
+
+                        LKR
+
+                        <span th:text="${#numbers.formatDecimal(
+                            reservation.totalAmount,
+                            2,
+                            2
+                        )}">
+                            60000.00
+                        </span>
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Cancellation form -->
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h2>
+                    Cancellation Request
+                </h2>
+
+            </div>
+
+
+            <form id="cancellationForm">
+
+                <input type="hidden"
+                       id="cancellationReservationId"
+                       th:value="${reservation.reservationId}">
+
+
+                <div class="form-group">
+
+                    <label for="cancellationReason">
+                        Cancellation reason
+                    </label>
+
+                    <textarea id="cancellationReason"
+                              maxlength="300"
+                              rows="6"
+                              required
+                              placeholder="Please enter the reason for cancellation."></textarea>
+
+                    <small>
+                        Maximum 300 characters.
+                    </small>
+
+                </div>
+
+
+                <div class="policy-box">
+
+                    <h3>
+                        Refund policy
+                    </h3>
+
+                    <ul>
+
+                        <li>
+                            5 or more days before check-in:
+                            100% refund
+                        </li>
+
+                        <li>
+                            3–4 days before check-in:
+                            75% refund
+                        </li>
+
+                        <li>
+                            0–2 days before check-in:
+                            No refund
+                        </li>
+
+                    </ul>
+
+                </div>
+
+
+                <div id="cancellationMessage"
+                     class="message hidden">
+                </div>
+
+
+                <button type="submit"
+                        id="cancellationButton"
+                        class="primary-button">
+
+                    Submit Cancellation Request
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            const form =
+                document.getElementById(
+                    "cancellationForm"
+                );
+
+
+            form.addEventListener(
+                "submit",
+                async function (event) {
+
+                    event.preventDefault();
+
+
+                    const reservationId =
+                        document.getElementById(
+                            "cancellationReservationId"
+                        ).value;
+
+
+                    const reason =
+                        document.getElementById(
+                            "cancellationReason"
+                        ).value.trim();
+
+
+                    const message =
+                        document.getElementById(
+                            "cancellationMessage"
+                        );
+
+
+                    const button =
+                        document.getElementById(
+                            "cancellationButton"
+                        );
+
+
+                    if (!reason) {
+
+                        showCancellationMessage(
+                            message,
+                            "Please enter a cancellation reason.",
+                            "error"
+                        );
+
+                        return;
+                    }
+
+
+                    button.disabled = true;
+
+                    button.textContent =
+                        "Submitting...";
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `/api/cancellations?reservationId=${
+                                    encodeURIComponent(reservationId)
+                                }&requestedBy=Guest&cancellationReason=${
+                                    encodeURIComponent(reason)
+                                }`,
+                                {
+                                    method: "POST"
+                                }
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Cancellation request failed."
+                            );
+
+                        }
+
+
+                        showCancellationMessage(
+                            message,
+                            "Cancellation request submitted. " +
+                            "Status: " +
+                            data.cancellationStatus,
+                            "success"
+                        );
+
+
+                        button.textContent =
+                            "Request Submitted";
+
+
+                    } catch (error) {
+
+                        showCancellationMessage(
+                            message,
+                            error.message,
+                            "error"
+                        );
+
+
+                        button.disabled = false;
+
+                        button.textContent =
+                            "Submit Cancellation Request";
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    function showCancellationMessage(
+        element,
+        text,
+        type
+    ) {
+
+        element.textContent = text;
+
+        element.classList.remove(
+            "hidden",
+            "success",
+            "error"
+        );
+
+        element.classList.add(type);
+
+    }
+
+</script>
+
+</body>
+</html>

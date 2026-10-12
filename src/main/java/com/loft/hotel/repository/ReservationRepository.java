@@ -23,4 +23,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
     List<Reservation> findOverlappingForRoom(@Param("roomId") Integer roomId,
                                              @Param("checkIn") LocalDate checkIn,
                                              @Param("checkOut") LocalDate checkOut);
+
 }
