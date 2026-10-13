@@ -381,12 +381,6 @@
           </td>
           <td>
             <div class="table-actions">
-              ${r.reservationStatus === "PENDING" ? `
-                <button class="btn btn-sm btn-primary" onclick="confirmReservationAction(${r.reservationId})" title="Confirm Booking">Confirm</button>
-              ` : ""}
-              ${r.reservationStatus !== "CANCELLED" ? `
-                <button class="btn btn-sm btn-secondary" onclick="cancelReservationAction(${r.reservationId})" title="Cancel Booking" style="color: #EF4444;">Cancel</button>
-              ` : ""}
               <button class="btn btn-sm btn-secondary" onclick="viewReservationModal(${r.reservationId})">View</button>
             </div>
           </td>
