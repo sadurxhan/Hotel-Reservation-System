@@ -31,12 +31,14 @@ public class CalendarBlock {
 
     public CalendarBlock() {}
 
+    //constructor for manual admin blocks
     public CalendarBlock(LocalDate blockedDate, String source, Room room) {
         this.blockedDate = blockedDate;
         this.source = source;
         this.room = room;
     }
 
+    //constructor for synced external blocks
     public CalendarBlock(LocalDate blockedDate, String source, String externalUid, Room room) {
         this.blockedDate = blockedDate;
         this.source = source;
