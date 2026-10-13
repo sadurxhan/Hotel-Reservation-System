@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -122,9 +123,10 @@ public class PaymentService {
                     "Payment is already PAID but the notification details do not match.");
         }
 
-        if (payment.getPaymentStatus() != Payment.PaymentStatus.PENDING) {
+        if (payment.getPaymentStatus() != Payment.PaymentStatus.PENDING
+                && payment.getPaymentStatus() != Payment.PaymentStatus.FAILED) {
             throw new IllegalStateException(
-                    "Only PENDING payments can be marked as PAID.");
+                    "Only PENDING or FAILED payments can be marked as PAID.");
         }
 
         if (payment.getAmount() == null
@@ -194,5 +196,9 @@ public class PaymentService {
 
         payment.setPaymentStatus(Payment.PaymentStatus.FAILED);
         return paymentRepository.save(payment);
+    }
+
+    public List<Payment> getAllPayments() {
+        return paymentRepository.findAll();
     }
 }

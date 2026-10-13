@@ -29,8 +29,7 @@ public class ActivityAdminPageController {
     // including hidden ones (the public page only shows the active ones).
     @GetMapping
     public String showAdminPage(Model model) {
-        model.addAttribute("activities", activityService.getAllActivities());
-        return "admin-activities";     // templates/admin-activities.html
+        return "redirect:/admin?tab=activities";
     }
 
     // POST /admin/activities/add -> add a new activity (photo is optional)

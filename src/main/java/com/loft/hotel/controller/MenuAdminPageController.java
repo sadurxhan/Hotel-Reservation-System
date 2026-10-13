@@ -29,8 +29,7 @@ public class MenuAdminPageController {
     // including hidden ones (the public /menu page only shows available ones).
     @GetMapping
     public String showAdminPage(Model model) {
-        model.addAttribute("menuItems", menuShowcaseService.getAllMenuItems());
-        return "admin-menu";     // templates/admin-menu.html
+        return "redirect:/admin?tab=menu";
     }
 
     // POST /admin/menu/add -> add a new meal (photo is optional)

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Sign In | The Loft by the Lake</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-serif: 'Playfair Display', Georgia, serif;
+            --forest-dark: #11271C;
+            --forest-primary: #1B3B2B;
+            --gold-primary: #D4B46A;
+            --gold-dark: #B59345;
+            --border-light: #E7ECE8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, #0F2017 0%, #173325 50%, #11271C 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: #1A2E22;
+        }
+
+        .login-card {
+            background: #FFFFFF;
+            border-radius: 18px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 420px;
+            padding: 38px 34px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold-primary), var(--gold-dark));
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .brand-badge {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-serif);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--forest-dark);
+            margin-bottom: 12px;
+            box-shadow: 0 4px 14px rgba(212, 180, 106, 0.35);
+        }
+
+        .brand-title {
+            font-family: var(--font-serif);
+            font-size: 1.45rem;
+            color: var(--forest-primary);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            color: #64748B;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #1A2E22;
+            background-color: #FAFAFA;
+            outline: none;
+            transition: all 0.2s ease;
+            font-family: var(--font-sans);
+        }
+
+        .form-control:focus {
+            background-color: #FFFFFF;
+            border-color: var(--forest-primary);
+            box-shadow: 0 0 0 3px rgba(27, 59, 43, 0.08);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--forest-primary);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #244C38;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(27, 59, 43, 0.2);
+        }
+
+        .alert-error {
+            background-color: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-success {
+            background-color: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            color: #065F46;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 0.78rem;
+            color: #94A3B8;
+        }
+
+        .footer-note a {
+            color: var(--forest-primary);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="brand-badge">TL</div>
+            <h1 class="brand-title">The Loft by the Lake</h1>
+            <p class="brand-subtitle">Staff &amp; Administrative Console</p>
+        </div>
+
+        <div th:if="${param.error}" class="alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Invalid administrator username or security key.</span>
+        </div>
+
+        <div th:if="${param.logout}" class="alert-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span>You have been safely logged out.</span>
+        </div>
+
+        <form th:action="@{/admin/login}" method="post">
+            <div class="form-group">
+                <label for="usernameInput">Admin Username</label>
+                <input type="text" id="usernameInput" name="username" class="form-control" placeholder="admin" value="admin" required autofocus autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="passwordInput">Security Key / Password</label>
+                <input type="password" id="passwordInput" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-submit">
+                Sign In to Console
+            </button>
+        </form>
+
+        <div class="footer-note">
+            <span>Guest sanctuary? </span>
+            <a href="/" target="_blank">Return to public site</a>
+        </div>
+    </div>
+
+</body>
+</html>

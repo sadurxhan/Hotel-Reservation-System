@@ -44,4 +44,10 @@ public class RefundController {
         adminGuard.check(key);
         return ResponseEntity.ok(refundService.markRefundAsPaid(refundId));
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Refund>> all(@RequestHeader("X-Admin-Key") String key) {
+        adminGuard.check(key);
+        return ResponseEntity.ok(refundService.getAllRefunds());
+    }
 }

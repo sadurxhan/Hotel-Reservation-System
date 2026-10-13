@@ -236,17 +236,10 @@
         statusEl.innerText = `Reservation #${reservationId} created (PENDING). Redirecting to checkout...`;
       }
 
-      // Handoff to Member 3's payment page:
-      // In dev mode, initialize the session guard via dev endpoint or directly open checkout
-      try {
-        await fetch(`/dev/checkout-session?reservationId=${encodeURIComponent(reservationId)}`);
-      } catch (e) {
-        // Dev endpoint optional if running with persistent sessions
-      }
-
+      // Handoff to checkout payment page
       setTimeout(() => {
         window.location.href = `/checkout?reservationId=${encodeURIComponent(reservationId)}`;
-      }, 800);
+      }, 600);
 
     } catch (err) {
       console.error("Booking submission error:", err);

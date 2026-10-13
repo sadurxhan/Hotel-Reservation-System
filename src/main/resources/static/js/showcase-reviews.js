@@ -271,7 +271,51 @@
     }
   };
 
-  // 6. Handle Contact Inquiry Submission (POST /inquiry)
+  // 6. Handle Inquiry Subject Change (Toggles between Standard Inquiry & Cancellation Request)
+  window.handleInquirySubjectChange = function (subject) {
+    const generalFields = document.getElementById("generalInquiryFields");
+    const cancelFields = document.getElementById("cancellationFields");
+    const submitBtn = document.getElementById("inquirySubmitBtn");
+
+    const fullNameInput = document.getElementById("inquiryFullName");
+    const emailInput = document.getElementById("inquiryEmail");
+    const phoneInput = document.getElementById("inquiryPhoneNo");
+    const messageInput = document.getElementById("inquiryMessage");
+
+    const cancelResId = document.getElementById("cancelReservationId");
+    const cancelEmail = document.getElementById("cancelEmail");
+    const cancelReason = document.getElementById("cancelReason");
+
+    if (subject === "Cancellation Request") {
+      if (generalFields) generalFields.style.display = "none";
+      if (cancelFields) cancelFields.style.display = "block";
+      if (submitBtn) submitBtn.innerText = "Submit Cancellation Request ➔";
+
+      if (fullNameInput) fullNameInput.required = false;
+      if (emailInput) emailInput.required = false;
+      if (phoneInput) phoneInput.required = false;
+      if (messageInput) messageInput.required = false;
+
+      if (cancelResId) cancelResId.required = true;
+      if (cancelEmail) cancelEmail.required = true;
+      if (cancelReason) cancelReason.required = true;
+    } else {
+      if (generalFields) generalFields.style.display = "block";
+      if (cancelFields) cancelFields.style.display = "none";
+      if (submitBtn) submitBtn.innerText = "Send Inquiry ➔";
+
+      if (fullNameInput) fullNameInput.required = true;
+      if (emailInput) emailInput.required = true;
+      if (phoneInput) phoneInput.required = true;
+      if (messageInput) messageInput.required = true;
+
+      if (cancelResId) cancelResId.required = false;
+      if (cancelEmail) cancelEmail.required = false;
+      if (cancelReason) cancelReason.required = false;
+    }
+  };
+
+  // 7. Handle Contact Inquiry & Cancellation Submission
   window.submitInquiryForm = async function (event) {
     event.preventDefault();
 
@@ -279,44 +323,86 @@
     const feedback = document.getElementById("inquiryFormFeedback");
     const submitBtn = form.querySelector("button[type='submit']");
     const formData = new FormData(form);
+    const subject = formData.get("subject");
 
     try {
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Sending Message...";
-      }
+      if (subject === "Cancellation Request") {
+        const reservationId = (formData.get("reservationId") || "").trim();
+        const email = (formData.get("cancelEmail") || "").trim();
+        const reason = (formData.get("reason") || "").trim();
 
-      const params = new URLSearchParams();
-      params.append("fullName", formData.get("fullName"));
-      params.append("email", formData.get("email"));
-      params.append("phoneNo", formData.get("phoneNo"));
-      params.append("subject", formData.get("subject"));
-      params.append("message", formData.get("message"));
+        if (!reservationId || !email || !reason) {
+          throw new Error("Please fill in Reservation ID, Email, and Cancellation Reason.");
+        }
 
-      const response = await fetch("/inquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString()
-      });
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerText = "Submitting Cancellation Request...";
+        }
 
-      if (response.ok) {
-        form.reset();
-        if (feedback) {
-          feedback.className = "inquiry-feedback success";
-          feedback.innerText = "Your message has been sent to our caretakers. We will reach back shortly!";
+        const url = `/api/cancellations?reservationId=${encodeURIComponent(reservationId)}&email=${encodeURIComponent(email)}&reason=${encodeURIComponent(reason)}`;
+        const response = await fetch(url, {
+          method: "POST"
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (response.ok && data) {
+          form.reset();
+          if (feedback) {
+            if (data.cancellationStatus === "REJECTED") {
+              feedback.className = "inquiry-feedback warning";
+              feedback.innerText = "Your cancellation request was submitted, but check-in is within 2 days so it cannot be cancelled as per policy. Your booking remains active.";
+            } else {
+              feedback.className = "inquiry-feedback success";
+              feedback.innerText = `Cancellation request for Reservation #${data.reservationId} has been submitted successfully. A confirmation email has been dispatched.`;
+            }
+          }
+          // Reset view to standard inquiry after successful cancellation submission
+          handleInquirySubjectChange("General Inquiry");
+        } else {
+          const errMsg = (data && data.message) ? data.message : "Unable to submit cancellation request. Please verify your reservation ID and email.";
+          throw new Error(errMsg);
         }
       } else {
-        throw new Error("Could not send inquiry. Please try again.");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerText = "Sending Message...";
+        }
+
+        const params = new URLSearchParams();
+        params.append("fullName", formData.get("fullName") || "");
+        params.append("email", formData.get("email") || "");
+        params.append("phoneNo", formData.get("phoneNo") || "");
+        params.append("subject", formData.get("subject") || "");
+        params.append("message", formData.get("message") || "");
+
+        const response = await fetch("/inquiry", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString()
+        });
+
+        if (response.ok) {
+          form.reset();
+          if (feedback) {
+            feedback.className = "inquiry-feedback success";
+            feedback.innerText = "Your message has been sent to our caretakers. We will reach back shortly!";
+          }
+        } else {
+          throw new Error("Could not send inquiry. Please try again.");
+        }
       }
     } catch (err) {
       if (feedback) {
         feedback.className = "inquiry-feedback error";
-        feedback.innerText = err.message || "Failed to send inquiry.";
+        feedback.innerText = err.message || "Failed to submit request.";
       }
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerText = "Send Inquiry ➔";
+        const currentSubject = document.getElementById("inquirySubject") ? document.getElementById("inquirySubject").value : "";
+        submitBtn.innerText = (currentSubject === "Cancellation Request") ? "Submit Cancellation Request ➔" : "Send Inquiry ➔";
       }
     }
   };

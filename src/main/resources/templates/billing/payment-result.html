@@ -1,137 +1,382 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Result | The Loft by the Lake</title>
-    <link rel="stylesheet" th:href="@{/css/billing.css}">
-</head>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/billing.css}">
+
+    <style>
+        /* Page layout */
+        .result-page-wrap {
+            max-width: 620px;
+            width: 100%;
+            margin: 44px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* ─ Result card ─ */
+        .result-card {
+            background: #fff;
+            border: 1px solid var(--border-subtle, #EFE9DE);
+            border-radius: 20px;
+            box-shadow: 0 14px 42px rgba(27,59,43,0.08);
+            overflow: hidden;
+        }
+
+        /* ─ Result top band (colour changes per status) ─ */
+        .result-band {
+            padding: 36px 40px 28px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .result-band.success { background: linear-gradient(135deg, #1B3B2B 0%, #1e5c3a 100%); }
+        .result-band.pending { background: linear-gradient(135deg, #6b5c2e 0%, #997a36 100%); }
+        .result-band.failed  { background: linear-gradient(135deg, #7a1e1e 0%, #a83232 100%); }
+
+        /* Icon circle */
+        .result-icon-circle {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        .result-band.success .result-icon-circle { background: rgba(255,255,255,0.15); }
+        .result-band.pending .result-icon-circle { background: rgba(255,255,255,0.15); }
+        .result-band.failed  .result-icon-circle { background: rgba(255,255,255,0.15); }
+
+        .result-band h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.9rem;
+            color: #fff;
+            margin: 0;
+        }
+
+        .result-band p {
+            font-size: 0.93rem;
+            color: rgba(255,255,255,0.78);
+            max-width: 420px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* ─ Payment details section ─ */
+        .result-body { padding: 28px 36px 10px; }
+
+        .result-section-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            color: #8A7352;
+            margin-bottom: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border-light, #E7E0D3);
+            font-size: 0.9rem;
+            gap: 12px;
+        }
+
+        .detail-row:last-child { border-bottom: none; }
+        .detail-row .d-label { color: var(--text-muted, #6B726C); display: flex; align-items: center; gap: 6px; }
+        .detail-row .d-value { font-weight: 600; color: var(--primary-green, #1B3B2B); text-align: right; }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 13px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-paid    { background: #D1FAE5; color: #065F46; }
+        .badge-pending { background: #FEF9C3; color: #854D0E; }
+        .badge-failed  { background: #FEE2E2; color: #991B1B; }
+
+        /* Amount highlight */
+        .amount-highlight {
+            background: var(--bg-muted, #F4EFE6);
+            border-radius: 10px;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 14px 0 8px;
+        }
+
+        .amount-highlight .a-label { font-size: 0.85rem; color: var(--text-muted, #6B726C); }
+        .amount-highlight .a-value {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--primary-green, #1B3B2B);
+        }
+
+        /* ─ Pending notice ─ */
+        .pending-notice {
+            background: #FEF9C3;
+            border: 1px solid #FDE68A;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 0.85rem;
+            color: #78350F;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 10px 0;
+            line-height: 1.55;
+        }
+
+        /* ─ Actions footer ─ */
+        .result-actions {
+            padding: 22px 36px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            background: var(--primary-green, #1B3B2B);
+            color: #fff;
+            border: none;
+            padding: 13px 20px;
+            border-radius: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-primary:hover { background: #12281D; transform: translateY(-1px); }
+
+        .btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            background: transparent;
+            color: var(--primary-green, #1B3B2B);
+            border: 1.5px solid var(--primary-green, #1B3B2B);
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-secondary:hover { background: var(--primary-green, #1B3B2B); color: #fff; }
+
+        .btn-danger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            background: #C0392B;
+            color: #fff;
+            border: none;
+            padding: 13px 20px;
+            border-radius: 8px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-danger:hover { background: #A93226; }
+
+        .btn-home {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted, #6B726C);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            transition: color 0.15s;
+        }
+        .btn-home:hover { color: var(--primary-green, #1B3B2B); }
+
+        /* ─ Page footer ─ */
+        .billing-footer {
+            background: var(--primary-green, #1B3B2B);
+            color: rgba(255,255,255,0.55);
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+
+        @media (max-width: 520px) {
+            .result-band { padding: 28px 22px 22px; }
+            .result-body { padding: 22px 20px 8px; }
+            .result-actions { padding: 18px 20px 24px; }
+            .btn-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
 <body>
 
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
 <header class="topbar">
     <div class="brand">
-        <span class="brand-name">The Loft</span>
-        <span class="brand-subtitle">by the Lake</span>
+        <a th:href="@{/}" class="brand-name" style="text-decoration:none;">The Loft by the Lake</a>
+        <span class="brand-subtitle">Kurunegala • Sri Lanka</span>
     </div>
+    <nav>
+        <a th:href="@{/}">← Back to Home</a>
+    </nav>
 </header>
 
-<main class="page-container">
-    <section class="result-card">
+<!-- ═══ RESULT PAGE ══════════════════════════════════════════════════ -->
+<main style="flex:1;">
+<div class="result-page-wrap">
+<div class="result-card">
 
-        <!-- PAID -->
-        <div th:if="${payment.paymentStatus.name() == 'PAID'}"
-             class="result-icon success-icon">✓</div>
+    <!-- ─ PAID ────────────────────────────────────────── -->
+    <div th:if="${payment.paymentStatus.name() == 'PAID'}" class="result-band success">
+        <div class="result-icon-circle">✓</div>
+        <h1>Payment Successful</h1>
+        <p>Your payment has been verified and your reservation is now confirmed. A confirmation email has been sent to you.</p>
+    </div>
 
-        <h1 th:if="${payment.paymentStatus.name() == 'PAID'}">
-            Payment Successful
-        </h1>
+    <!-- ─ PENDING ─────────────────────────────────────── -->
+    <div th:if="${payment.paymentStatus.name() == 'PENDING'}" class="result-band pending">
+        <div class="result-icon-circle">⏳</div>
+        <h1>Processing Payment</h1>
+        <p>We are awaiting confirmation from PayHere. Please do not pay again while this is being verified.</p>
+    </div>
 
-        <p th:if="${payment.paymentStatus.name() == 'PAID'}"
-           class="result-description">
-            Your payment has been verified and your reservation has been confirmed.
-        </p>
+    <!-- ─ FAILED ──────────────────────────────────────── -->
+    <div th:if="${payment.paymentStatus.name() == 'FAILED'}" class="result-band failed">
+        <div class="result-icon-circle">✕</div>
+        <h1>Payment Failed</h1>
+        <p>Your payment could not be completed. Please review your details and try again, or contact us for assistance.</p>
+    </div>
 
-        <!-- PENDING -->
-        <div th:if="${payment.paymentStatus.name() == 'PENDING'}"
-             class="result-icon">…</div>
+    <!-- ─ Amount highlight ───────────────────────────── -->
+    <div class="result-body">
 
-        <h1 th:if="${payment.paymentStatus.name() == 'PENDING'}">
-            Processing Payment
-        </h1>
+        <div class="amount-highlight">
+            <span class="a-label">Amount</span>
+            <span class="a-value">LKR <span th:text="${#numbers.formatDecimal(payment.amount, 1, 2)}">60,000.00</span></span>
+        </div>
 
-        <p th:if="${payment.paymentStatus.name() == 'PENDING'}"
-           class="result-description">
-            We are waiting for PayHere to confirm your payment.
-            Please refresh this page in a moment. Do not pay again while
-            the payment is being verified.
-        </p>
-
-        <!-- FAILED -->
-        <div th:if="${payment.paymentStatus.name() == 'FAILED'}"
-             class="result-icon failure-icon">!</div>
-
-        <h1 th:if="${payment.paymentStatus.name() == 'FAILED'}">
-            Payment Failed
-        </h1>
-
-        <p th:if="${payment.paymentStatus.name() == 'FAILED'}"
-           class="result-description">
-            Your payment could not be completed. Check your reservation
-            status before trying again.
-        </p>
+        <!-- Pending refresh notice -->
+        <div th:if="${payment.paymentStatus.name() == 'PENDING'}" class="pending-notice">
+            <span>⚠️</span>
+            <span>PayHere is confirming your payment. Refresh this page in a moment. <strong>Do not pay again</strong> until this status changes.</span>
+        </div>
 
         <!-- Payment details -->
-        <div class="result-details">
+        <p class="result-section-title" style="margin-top:18px;">Payment Details</p>
 
-            <div class="detail-row">
-                <span>Payment ID</span>
-                <strong th:text="${payment.paymentId}">PAY001</strong>
-            </div>
-
-            <div class="detail-row">
-                <span>Reservation ID</span>
-                <strong th:text="${payment.reservationId}">101</strong>
-            </div>
-
-            <div class="detail-row">
-                <span>Amount</span>
-                <strong>
-                    LKR
-                    <span th:text="${#numbers.formatDecimal(payment.amount, 2, 2)}">
-                        60000.00
-                    </span>
-                </strong>
-            </div>
-
-            <div class="detail-row">
-                <span>Payment Method</span>
-                <strong th:text="${payment.paymentMethod}">Credit_Card</strong>
-            </div>
-
-            <div class="detail-row">
-                <span>Status</span>
-                <span class="status-badge"
-                      th:text="${payment.paymentStatus}">PENDING</span>
-            </div>
-
-            <div th:if="${payment.transactionId != null}" class="detail-row">
-                <span>Transaction ID</span>
-                <strong th:text="${payment.transactionId}">TXN001</strong>
-            </div>
-
+        <div class="detail-row">
+            <span class="d-label">🔖 Payment ID</span>
+            <span class="d-value" th:text="${payment.paymentId}">PAY-001</span>
+        </div>
+        <div class="detail-row">
+            <span class="d-label">📋 Reservation ID</span>
+            <span class="d-value">#<span th:text="${payment.reservationId}">101</span></span>
+        </div>
+        <div class="detail-row">
+            <span class="d-label">💳 Payment Method</span>
+            <span class="d-value" th:text="${payment.paymentMethod}">Credit Card</span>
+        </div>
+        <div class="detail-row">
+            <span class="d-label">📊 Status</span>
+            <span class="d-value">
+                <span th:if="${payment.paymentStatus.name() == 'PAID'}"    class="status-badge badge-paid"    th:text="${payment.paymentStatus}">PAID</span>
+                <span th:if="${payment.paymentStatus.name() == 'PENDING'}" class="status-badge badge-pending" th:text="${payment.paymentStatus}">PENDING</span>
+                <span th:if="${payment.paymentStatus.name() == 'FAILED'}"  class="status-badge badge-failed"  th:text="${payment.paymentStatus}">FAILED</span>
+            </span>
+        </div>
+        <div th:if="${payment.transactionId != null}" class="detail-row">
+            <span class="d-label">🔑 Transaction ID</span>
+            <span class="d-value" th:text="${payment.transactionId}">TXN-001</span>
         </div>
 
-        <!-- Actions -->
-        <div class="result-actions">
+    </div>
 
-            <div th:if="${payment.paymentStatus.name() == 'PAID'}"
-                 class="result-button-group">
+    <!-- ─ Actions ────────────────────────────────────── -->
+    <div class="result-actions">
 
-                <a th:if="${invoice != null}"
-                   class="primary-button"
-                   th:href="@{/invoice(invoiceId=${invoice.invoiceId})}">
-                    View Invoice
-                </a>
-
-                <a class="secondary-button"
-                   th:href="@{/cancellation(reservationId=${payment.reservationId})}">
-                    Manage Cancellation
-                </a>
-
-            </div>
-
-            <a th:if="${payment.paymentStatus.name() == 'FAILED'}"
-               class="primary-button"
-               th:href="@{/payment(reservationId=${payment.reservationId})}">
-                Try Payment Again
+        <!-- PAID: View Invoice -->
+        <div th:if="${payment.paymentStatus.name() == 'PAID'}">
+            <a th:if="${invoice != null}"
+               th:href="@{/invoice(invoiceId=${invoice.invoiceId})}"
+               class="btn-primary" style="width: 100%;">
+                📄 View Invoice
             </a>
-
         </div>
 
-    </section>
+        <!-- PENDING: Refresh button -->
+        <div th:if="${payment.paymentStatus.name() == 'PENDING'}">
+            <button onclick="window.location.reload()" class="btn-primary" style="width:100%;">
+                🔄 Refresh Status
+            </button>
+        </div>
+
+        <!-- FAILED: Try again -->
+        <div th:if="${payment.paymentStatus.name() == 'FAILED'}">
+            <a th:href="@{/payment(reservationId=${payment.reservationId})}"
+               class="btn-danger" style="width:100%;">
+                🔁 Try Payment Again
+            </a>
+        </div>
+
+        <!-- Always: Back to home -->
+        <a th:href="@{/}" class="btn-home">← Return to The Loft by the Lake homepage</a>
+    </div>
+
+</div>
+</div>
 </main>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
+<footer class="billing-footer">
+    &copy; 2026 The Loft by the Lake Boutique Hotel. All rights reserved. &nbsp;•&nbsp; Embogama, Kurunegala, Sri Lanka
+</footer>
 
 </body>
 </html>

@@ -75,7 +75,19 @@ public class BillingPageController {
 
     @GetMapping("/invoice")
     public String invoicePage(@RequestParam String invoiceId, Model model) {
-        model.addAttribute("invoice", invoiceService.getInvoice(invoiceId));
+        var invoice = invoiceService.getInvoice(invoiceId);
+        model.addAttribute("invoice", invoice);
+
+        Payment payment = paymentService.getPayment(invoice.getPaymentId());
+        model.addAttribute("payment", payment);
+
+        Reservation reservation = reservationRepository.findById(payment.getReservationId())
+                .orElse(null);
+        model.addAttribute("reservation", reservation);
+        if (reservation != null) {
+            model.addAttribute("guest", reservation.getGuest());
+        }
+
         return "billing/invoice";
     }
 

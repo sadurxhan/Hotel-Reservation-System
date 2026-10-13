@@ -90,7 +90,7 @@ CREATE TABLE payment (
 CREATE TABLE refund (
     refund_id VARCHAR(40) PRIMARY KEY,
     payment_id VARCHAR(40) NOT NULL,
-    refund_status ENUM('PENDING', 'APPROVED', 'REFUNDED', 'REJECTED') NOT NULL,
+    refund_status ENUM('PENDING', 'REFUNDED') NOT NULL,
     refund_reason VARCHAR(300) NOT NULL,
     refund_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     refund_amount DECIMAL(10,2) NOT NULL,
@@ -248,7 +248,6 @@ INSERT INTO payment VALUES ('PAY003', 103, 27000.00, '2026-09-22 09:05:00', 'Onl
 
 -- IT25102967
 INSERT INTO refund VALUES ('REF001', 'PAY001', 'REFUNDED', '100% refund applied according to cancellation policy', '2026-09-25 10:00:00', 60000.00);
-INSERT INTO refund VALUES ('REF002', 'PAY002', 'APPROVED', 'Remaining stay cancelled by owner', '2026-09-26 11:00:00', 25000.00);
 
 -- IT25102967
 INSERT INTO invoice VALUES ('INV001', 'PAY001', 60000.00, 'SENT', '2026-09-20 10:36:00');

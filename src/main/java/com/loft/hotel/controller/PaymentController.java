@@ -39,4 +39,12 @@ public class PaymentController {
         return ResponseEntity.ok(
                 paymentService.getPaidPaymentByReservationId(reservationId));
     }
+
+    // Admin retrieves all payments.
+    @GetMapping("/all")
+    public ResponseEntity<java.util.List<Payment>> getAllPayments(
+            @RequestHeader("X-Admin-Key") String key) {
+        adminGuard.check(key);
+        return ResponseEntity.ok(paymentService.getAllPayments());
+    }
 }

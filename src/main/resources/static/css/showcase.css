@@ -143,3 +143,10 @@ select.form-control {
     color: #C62828;
     border: 1px solid #FFCDD2;
 }
+
+.inquiry-feedback.warning {
+    display: block;
+    background-color: #FFF8E1;
+    color: #8D6E00;
+    border: 1px solid #FFE082;
+}

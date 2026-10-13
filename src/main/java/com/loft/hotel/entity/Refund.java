@@ -27,7 +27,8 @@ public class Refund {
     // PENDING  = refund created, admin has not paid the guest yet
     // REFUNDED = admin paid the guest manually and marked it as paid
     public enum RefundStatus {
-        PENDING, REFUNDED
+        PENDING,
+        REFUNDED
     }
 
     @Enumerated(EnumType.STRING)
@@ -45,6 +46,7 @@ public class Refund {
     private BigDecimal refundAmount;
 
     public Refund() {
+        this.refundDateTime = LocalDateTime.now();
     }
 
     public Refund(String refundId, String paymentId, RefundStatus refundStatus, String refundReason, BigDecimal refundAmount) {
@@ -53,6 +55,14 @@ public class Refund {
         this.refundStatus = refundStatus;
         this.refundReason = refundReason;
         this.refundAmount = refundAmount;
+        this.refundDateTime = LocalDateTime.now();
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.refundDateTime == null) {
+            this.refundDateTime = LocalDateTime.now();
+        }
     }
 
     public void setRefundId(String refundId){ this.refundId = refundId; }

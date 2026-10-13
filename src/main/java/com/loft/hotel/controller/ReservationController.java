@@ -22,15 +22,20 @@ public class ReservationController {
 
     // POST /api/reservations
     @PostMapping
-    public ResponseEntity<?> createReservation(@RequestBody BookingRequest request) {
+    public ResponseEntity<?> createReservation(@RequestBody BookingRequest request, jakarta.servlet.http.HttpSession session) {
         try {
             Reservation created = reservationService.createReservation(request);
+            if (session != null && created.getReservationId() != null) {
+                session.setAttribute(PayHereController.CHECKOUT_SESSION_KEY, created.getReservationId());
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
+            e.printStackTrace();
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred while processing your booking.");
+                    .body("Booking error: " + msg);
         }
     }
 

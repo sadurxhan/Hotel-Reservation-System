@@ -1,153 +1,497 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org">
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice | The Loft by the Lake</title>
 
-    <link rel="stylesheet"
-          th:href="@{/css/billing.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <style>
+        :root {
+            --primary-green: #1B3B2B;
+            --accent-bronze: #8A7352;
+            --bg-ivory: #FBF8F2;
+            --border-subtle: #EFE9DE;
+            --border-light: #E7E0D3;
+            --text-main: #2D3748;
+            --text-muted: #6B726C;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            background-color: var(--bg-ivory);
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        /* ─ Top navigation bar ─ */
+        .topbar {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar .brand-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        .topbar .brand-sub {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--accent-bronze);
+            font-weight: 700;
+            display: block;
+        }
+
+        .topbar nav a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .topbar nav a:hover {
+            color: var(--primary-green);
+        }
+
+        /* ─ Action bar ─ */
+        .invoice-actions {
+            max-width: 760px;
+            margin: 28px auto 16px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-print {
+            background: var(--primary-green);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-print:hover {
+            opacity: 0.9;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            color: var(--primary-green);
+        }
+
+        /* ─ Document Container ─ */
+        .invoice-page-wrap {
+            max-width: 760px;
+            width: 100%;
+            margin: 0 auto 60px;
+            padding: 0 20px;
+            flex: 1;
+        }
+
+        .invoice-wrap {
+            background: #ffffff;
+            border: 2px solid var(--primary-green);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(27, 59, 43, 0.08);
+        }
+
+        /* ─ Top Header Banner ─ */
+        .invoice-band {
+            background-color: #1B3B2B !important;
+            color: #ffffff !important;
+            padding: 34px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #D4B46A;
+        }
+
+        .brand-heading {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            margin-bottom: 4px;
+        }
+
+        .brand-tagline {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: #D4B46A !important;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .brand-contact {
+            font-size: 0.82rem;
+            color: #E2E8F0 !important;
+            line-height: 1.5;
+        }
+
+        .invoice-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2.6rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            text-align: right;
+            line-height: 1;
+        }
+
+        /* ─ Meta Section ─ */
+        .invoice-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            border-bottom: 1px solid var(--border-light);
+            background: #FAF8F5;
+        }
+
+        .meta-cell {
+            padding: 18px 24px;
+            border-right: 1px solid var(--border-light);
+        }
+
+        .meta-cell:last-child {
+            border-right: none;
+        }
+
+        .meta-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+            color: var(--accent-bronze);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        .meta-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* ─ Line items table ─ */
+        .invoice-table-wrap {
+            padding: 28px 40px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .invoice-table th {
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: var(--accent-bronze);
+            padding: 12px 0;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .invoice-table th.th-right {
+            text-align: right;
+        }
+
+        .invoice-table td {
+            padding: 18px 0;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .item-name {
+            font-weight: 700;
+            color: var(--primary-green);
+            font-size: 1.05rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .item-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .item-amount {
+            text-align: right;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--primary-green);
+            white-space: nowrap;
+        }
+
+        /* ─ Total Paid Box ─ */
+        .invoice-totals {
+            padding: 0 40px 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .totals-grand {
+            background-color: #1B3B2B !important;
+            color: #ffffff !important;
+            border-radius: 12px;
+            padding: 18px 26px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            border: 1px solid #1B3B2B;
+        }
+
+        .totals-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+            color: #D4B46A !important;
+        }
+
+        .totals-value {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            white-space: nowrap;
+        }
+
+        /* ─ Document Footer ─ */
+        .invoice-footer-strip {
+            background-color: #FAF8F5;
+            border-top: 1px solid var(--border-light);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .thank-you {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-style: italic;
+            font-size: 0.98rem;
+            color: var(--primary-green);
+        }
+
+        .contact-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 14px;
+        }
+
+        /* ─ Page bottom footer ─ */
+        .billing-footer {
+            background: var(--primary-green);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 18px;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+
+        /* ─ Print Media Query ─ */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+            }
+            .invoice-page-wrap {
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            .invoice-wrap {
+                border: 2px solid #1B3B2B !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            .invoice-band {
+                background-color: #1B3B2B !important;
+                color: #ffffff !important;
+            }
+            .brand-heading, .invoice-title {
+                color: #ffffff !important;
+            }
+            .brand-tagline {
+                color: #D4B46A !important;
+            }
+            .brand-contact {
+                color: #E2E8F0 !important;
+            }
+            .totals-grand {
+                background-color: #1B3B2B !important;
+                color: #ffffff !important;
+            }
+            .totals-label {
+                color: #D4B46A !important;
+            }
+            .totals-value {
+                color: #ffffff !important;
+            }
+        }
+    </style>
 </head>
-
-
 <body>
 
-<header class="topbar">
-
-    <div class="brand">
-        <span class="brand-name">The Loft</span>
-        <span class="brand-subtitle">by the Lake</span>
+<!-- Header -->
+<header class="topbar no-print">
+    <div>
+        <a th:href="@{/}" class="brand-name" style="text-decoration:none;">The Loft by the Lake</a>
+        <span class="brand-sub">Kurunegala • Sri Lanka</span>
     </div>
-
+    <nav>
+        <a th:href="@{/}">← Back to Home</a>
+    </nav>
 </header>
 
+<!-- Actions -->
+<div class="invoice-actions no-print">
+    <a th:href="@{/}" class="back-link">← Return to Home</a>
+    <button class="btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</div>
 
-<main class="page-container">
+<!-- Main Invoice -->
+<main class="invoice-page-wrap">
+    <div class="invoice-wrap">
 
-    <section class="invoice">
-
-        <div class="invoice-header">
-
+        <!-- Top Header Band -->
+        <div class="invoice-band">
             <div>
-
-                <p class="eyebrow">
-                    THE LOFT BY THE LAKE
-                </p>
-
-                <h1>
-                    Invoice
-                </h1>
-
+                <div class="brand-heading">The Loft by the Lake</div>
+                <span class="brand-tagline">Boutique Lakefront Retreat</span>
+                <div class="brand-contact">
+                    Kuda Wewa Lake Edge, Embogama, Kurunegala, Sri Lanka<br>
+                    📞 076 481 6177 &nbsp;|&nbsp; ✉️ info@theloftbythelake.com
+                </div>
             </div>
-
-
-            <div class="invoice-status">
-
-                <span>
-                    Status
-                </span>
-
-                <strong th:text="${invoice.invoiceStatus}">
-                    ISSUED
-                </strong>
-
+            <div>
+                <div class="invoice-title">Invoice</div>
             </div>
-
         </div>
 
-
-        <div class="invoice-details">
-
-            <div>
-
-                <span>
-                    Invoice ID
-                </span>
-
-                <strong th:text="${invoice.invoiceId}">
-                    invoice-id
-                </strong>
-
+        <!-- Meta Grid -->
+        <div class="invoice-meta">
+            <div class="meta-cell" th:if="${guest != null}">
+                <span class="meta-label">Billed To</span>
+                <span class="meta-value" th:text="${guest.fname + ' ' + (guest.lname != null ? guest.lname : '')}">Guest Name</span>
+                <span class="meta-sub" th:text="${guest.email}">guest@example.com</span>
+                <span class="meta-sub" th:text="${guest.phoneNo}">+94 7X XXX XXXX</span>
             </div>
-
-
-            <div>
-
-                <span>
-                    Payment ID
-                </span>
-
-                <strong th:text="${invoice.paymentId}">
-                    payment-id
-                </strong>
-
+            <div class="meta-cell">
+                <span class="meta-label">Invoice ID</span>
+                <span class="meta-value" th:text="${invoice.invoiceId}">INV-0001</span>
             </div>
-
-
-            <div>
-
-                <span>
-                    Issued Date
-                </span>
-
-                <strong th:text="${invoice.issuedDateTime}">
-                    date
-                </strong>
-
+            <div class="meta-cell">
+                <span class="meta-label">Payment ID</span>
+                <span class="meta-value" th:text="${invoice.paymentId}">PAY-0001</span>
             </div>
-
+            <div class="meta-cell">
+                <span class="meta-label">Issued Date</span>
+                <span class="meta-value" th:text="${invoice.issuedDateTime}">2026-10-13</span>
+            </div>
+            <div class="meta-cell" th:if="${reservation != null}">
+                <span class="meta-label">Stay Duration</span>
+                <span class="meta-value" th:text="${reservation.checkInDate + ' → ' + reservation.checkOutDate}">Check-in → Check-out</span>
+            </div>
         </div>
 
+        <!-- Table -->
+        <div class="invoice-table-wrap">
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="th-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="item-name" th:text="${(room != null ? room.roomType : (reservation != null && reservation.numberOfGuests != null && reservation.numberOfGuests > 5 ? 'Entire Lodge Buyout (Both Suites)' : 'Lakefront Loft Suite'))}">Lakefront Loft Suite</span>
+                            <span class="item-desc">Handcrafted Earthen Loft accommodation overlooking Kuda Wewa Lake (taxes &amp; service charges included)</span>
+                        </td>
+                        <td class="item-amount">
+                            LKR <span th:text="${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}">60,000.00</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div class="invoice-total">
-
-            <span>
-                Total Paid
-            </span>
-
-            <strong>
-
-                LKR
-
-                <span th:text="${#numbers.formatDecimal(
-                    invoice.totalAmount,
-                    2,
-                    2
-                )}">
-                    60000.00
+        <!-- Total Box -->
+        <div class="invoice-totals">
+            <div class="totals-grand">
+                <span class="totals-label">Total Amount Paid</span>
+                <span class="totals-value">
+                    LKR <span th:text="${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}">60,000.00</span>
                 </span>
-
-            </strong>
-
+            </div>
         </div>
 
-
-        <div class="invoice-footer">
-
-            <p>
-                Thank you for choosing The Loft by the Lake.
-            </p>
-
-            <button type="button"
-                    class="secondary-button"
-                    onclick="window.print()">
-
-                Print Invoice
-
-            </button>
-
+        <!-- Document Footer -->
+        <div class="invoice-footer-strip">
+            <div class="thank-you">"Thank you for choosing The Loft by the Lake."</div>
+            <div class="contact-info">
+                <span>📞 076 481 6177</span>
+                <span>✉️ info@theloftbythelake.com</span>
+            </div>
         </div>
 
-    </section>
-
+    </div>
 </main>
+
+<!-- Bottom Footer -->
+<footer class="billing-footer no-print">
+    &copy; 2026 The Loft by the Lake Boutique Hotel. All rights reserved. • Embogama, Kurunegala, Sri Lanka
+</footer>
 
 </body>
 </html>

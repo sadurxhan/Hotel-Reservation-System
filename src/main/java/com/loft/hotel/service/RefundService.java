@@ -128,4 +128,8 @@ public class RefundService {
         }
         return saved;
     }
+
+    public List<Refund> getAllRefunds() {
+        return refundRepository.findAll();
+    }
 }

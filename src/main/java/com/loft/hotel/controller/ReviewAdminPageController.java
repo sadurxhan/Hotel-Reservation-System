@@ -22,9 +22,7 @@ public class ReviewAdminPageController {
     // GET /admin/reviews -> show the moderation page
     @GetMapping
     public String showModerationPage(Model model) {
-        model.addAttribute("reviews", reviewService.getAllReviews());                  // everything, newest first
-        model.addAttribute("pendingCount", reviewService.getPendingReviews().size());  // how many need action
-        return "admin-reviews";                                                        // templates/admin-reviews.html
+        return "redirect:/admin?tab=reviews";
     }
 
     // POST /admin/reviews/3/moderate   with status=APPROVED or REJECTED

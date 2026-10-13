@@ -10,6 +10,13 @@ import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
 
+    @Query("""
+        select r from Reservation r
+        where r.reservationStatus = com.loft.hotel.entity.ReservationStatus.PENDING
+          and r.bookingDate < :cutoff
+        """)
+    List<Reservation> findPendingOlderThan(@Param("cutoff") java.time.LocalDateTime cutoff);
+
     // Finds reservations for a specific room that overlap the given date range
     // and are NOT cancelled - used to check availability before booking.
     @Query("""

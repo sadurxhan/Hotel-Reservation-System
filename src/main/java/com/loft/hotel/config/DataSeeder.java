@@ -30,25 +30,42 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        // Both rooms are identical, so they share one pricing tier.
-        RoomPricingTier standard = new RoomPricingTier();
-        standard.setTierName("Standard");
-        standard.setBaseRate(new BigDecimal("10000"));
-        tierRepository.save(standard);
+        // Pricing Tiers aligned with hotel offerings
+        RoomPricingTier tier1 = new RoomPricingTier();
+        tier1.setTierName("The Front Loft (Room 01)");
+        tier1.setBaseRate(new BigDecimal("19500.00"));
+        tierRepository.save(tier1);
+
+        RoomPricingTier tier2 = new RoomPricingTier();
+        tier2.setTierName("The Cozy Loft (Room 02)");
+        tier2.setBaseRate(new BigDecimal("16500.00"));
+        tierRepository.save(tier2);
+
+        RoomPricingTier tier3 = new RoomPricingTier();
+        tier3.setTierName("Entire Lodge Buyout");
+        tier3.setBaseRate(new BigDecimal("35000.00"));
+        tierRepository.save(tier3);
 
         Room room1 = new Room();
         room1.setRoomNumber("1");
-        room1.setRoomType("Standard");
-        room1.setDescription("Room 1");
-        room1.setTier(standard);
+        room1.setRoomType("The Front Loft (Suite 01)");
+        room1.setDescription("Our larger room situated at the front of the stilted structure with spacious loft beds.");
+        room1.setTier(tier1);
         roomRepository.save(room1);
 
-        // Separate row with its own ID, so booking Room 1 never blocks Room 2.
         Room room2 = new Room();
         room2.setRoomNumber("2");
-        room2.setRoomType("Standard");
-        room2.setDescription("Room 2");
-        room2.setTier(standard);
+        room2.setRoomType("The Cozy Loft (Suite 02)");
+        room2.setDescription("Intimate room with identical earthy clay wall finishes overlooking village paddy fields.");
+        room2.setTier(tier2);
         roomRepository.save(room2);
+
+        // Room 3: Entire Lodge Buyout (Both Suites)
+        Room room3 = new Room();
+        room3.setRoomNumber("3");
+        room3.setRoomType("Entire Lodge Buyout (Both Suites)");
+        room3.setDescription("Guaranteed exclusive stay of the entire sanctuary covering both suites up to 10 guests.");
+        room3.setTier(tier3);
+        roomRepository.save(room3);
     }
 }
