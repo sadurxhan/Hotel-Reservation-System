@@ -1131,78 +1131,86 @@
   };
 
   // ----------------------------------------------------
-  // 8. GUEST REVIEWS MODERATION
-  // ----------------------------------------------------
-  async function loadReviews() {
-    const tbody = document.getElementById("reviewsTbody");
-    if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #94A3B8;">Loading reviews...</td></tr>`;
+    // 8. GUEST REVIEWS MODERATION (FIXED FIELD MAPPINGS & ENDPOINTS)
+    // ----------------------------------------------------
+    async function loadReviews() {
+      const tbody = document.getElementById("reviewsTbody");
+      if (!tbody) return;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #94A3B8;">Loading reviews...</td></tr>`;
 
-    try {
-      const res = await fetch("/api/review/all");
-      if (!res.ok) throw new Error("Failed to load reviews.");
-      state.reviews = await res.json();
-      renderReviewsTable();
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #EF4444;">${err.message}</td></tr>`;
-    }
-  }
-
-  function renderReviewsTable() {
-    const tbody = document.getElementById("reviewsTbody");
-    if (!tbody) return;
-
-    if (state.reviews.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 32px; color: #94A3B8;">No guest reviews submitted yet.</td></tr>`;
-      return;
+      try {
+        const res = await fetch("/api/review/all");
+        if (!res.ok) throw new Error("Failed to load reviews.");
+        state.reviews = await res.json();
+        renderReviewsTable();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #EF4444;">${err.message}</td></tr>`;
+      }
     }
 
-    tbody.innerHTML = state.reviews.map(r => {
-      const statusClass = `status-${(r.status || "").toLowerCase()}`;
-      const stars = "★".repeat(r.rating || 5) + "☆".repeat(Math.max(0, 5 - (r.rating || 5)));
+    function renderReviewsTable() {
+      const tbody = document.getElementById("reviewsTbody");
+      if (!tbody) return;
 
-      return `
-        <tr>
-          <td>
-            <strong>${r.guestName || "Anonymous"}</strong>
-            <div style="font-size: 0.76rem; color: #64748B;">Stay: ${formatDate(r.stayDate)}</div>
-          </td>
-          <td>
-            <div style="color: #D4B46A; font-size: 1.1rem; letter-spacing: 2px;">${stars}</div>
-          </td>
-          <td style="max-width: 320px;">
-            <div style="font-size: 0.84rem; color: #334155; line-height: 1.4;">${r.comment || ""}</div>
-          </td>
-          <td>
-            <span class="badge-pill ${statusClass}">${r.status}</span>
-          </td>
-          <td>
-            <div style="font-size: 0.74rem; color: #94A3B8;">${formatDate(r.createdAt)}</div>
-          </td>
-          <td>
-            <div class="table-actions">
-              ${r.status !== "APPROVED" ? `
-                <button class="btn btn-sm btn-primary" onclick="moderateReviewAction(${r.reviewId}, 'APPROVED')">Approve</button>
-              ` : ""}
-              ${r.status !== "REJECTED" ? `
-                <button class="btn btn-sm btn-danger" onclick="moderateReviewAction(${r.reviewId}, 'REJECTED')">Reject</button>
-              ` : ""}
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
-  }
+      if (state.reviews.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 32px; color: #94A3B8;">No guest reviews submitted yet.</td></tr>`;
+        return;
+      }
 
-  window.moderateReviewAction = async function (id, status) {
-    try {
-      const res = await fetch(`/api/review/${id}/moderate?status=${status}`, { method: "PUT" });
-      if (!res.ok) throw new Error("Failed to moderate review.");
-      showToast(`Review #${id} ${status.toLowerCase()}.`);
-      loadReviews();
-    } catch (err) {
-      showToast(err.message, "error");
+      tbody.innerHTML = state.reviews.map(r => {
+        // Map entity fields directly without touching DB schema
+        const currentStatus = r.reviewStatus || r.status || "PENDING";
+        const statusClass = `status-${currentStatus.toLowerCase()}`;
+        const stars = "★".repeat(r.rating || 5) + "☆".repeat(Math.max(0, 5 - (r.rating || 5)));
+        const commentText = r.reviewComment || r.comment || "No comment provided.";
+        const displayDate = r.reviewDate || r.createdAt;
+
+        // Clean guest label using existing guest_id
+        const guestLabel = r.guestId ? `Verified Guest #${r.guestId}` : "Anonymous";
+
+        return `
+          <tr>
+            <td>
+              <strong>${guestLabel}</strong>
+              <div style="font-size: 0.76rem; color: #64748B;">Date: ${formatDate(displayDate)}</div>
+            </td>
+            <td>
+             <div style="color: #D4B46A; font-size: 1.1rem; letter-spacing: 2px;">${stars}</div>
+            </td>
+            <td style="max-width: 320px;">
+              <div style="font-size: 0.84rem; color: #334155; line-height: 1.4;">${commentText}</div>
+            </td>
+            <td>
+              <span class="badge-pill ${statusClass}">${currentStatus}</span>
+            </td>
+            <td>
+              <div style="font-size: 0.74rem; color: #94A3B8;">${formatDate(displayDate)}</div>
+            </td>
+            <td>
+              <div class="table-actions">
+                ${currentStatus !== "APPROVED" ? `
+                  <button class="btn btn-sm btn-primary" onclick="moderateReviewAction(${r.reviewId}, 'APPROVED')">Approve</button>
+                ` : ""}
+                ${currentStatus !== "REJECTED" ? `
+                  <button class="btn btn-sm btn-danger" onclick="moderateReviewAction(${r.reviewId}, 'REJECTED')">Reject</button>
+                ` : ""}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
+
+    window.moderateReviewAction = async function (id, status) {
+      try {
+        // FIX 3: Aligned endpoint URL path with ReviewController.java
+        const res = await fetch(`/api/review/moderate/${id}?status=${status}`, { method: "PUT" });
+        if (!res.ok) throw new Error("Failed to moderate review.");
+        showToast(`Review #${id} ${status.toLowerCase()}.`);
+        loadReviews();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
   };
 
   // ----------------------------------------------------
