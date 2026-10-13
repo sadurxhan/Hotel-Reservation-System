@@ -59,18 +59,23 @@
       const container = document.getElementById("dynamicActivitiesContainer");
       if (!container) return;
 
-      let activities = fallbackActivities;
+      let activities = [];
       try {
         const res = await fetch("/api/activity/all");
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            activities = data;
+          if (Array.isArray(data)) {
+            // Keep only active activities
+            activities = data.filter(act => act.active === true || act.isActive === true);
           }
         }
       } catch (err) {
         console.info("Using curated fallback activity records:", err);
       }
+
+      //if (activities.length === 0) {
+       // activities = fallbackActivities;
+      //}
 
       container.innerHTML = activities.map(act => {
         const photoSrc = (act.imageUrl || "images/hero/front-exterior.jpg").split(",")[0].trim();
@@ -91,7 +96,7 @@
             </div>
           </div>
         `;
-      }).join("");
+       }).join("");
     }
 
   // Activity Lightbox Opener
@@ -130,53 +135,34 @@
       const container = document.getElementById("dynamicMenuContainer");
       if (!container) return;
 
-      const fallbackMenus = [
-        {
-          mealType: "BREAKFAST",
-          title: "Traditional Village Breakfast Spread",
-          mealDescription: "Choice of coconut or kurakkan rotti with spicy pol sambol, traditional kiribath with lunu miris, or country kekulu rice with dhal. Served with seasonal fruit and fresh Ceylon tea or coffee.",
-          fileUrl: "images/menu/roti.jpg"
-        },
-        {
-          mealType: "LUNCH",
-          title: "Clay-Pot Country Lunch Feast",
-          mealDescription: "Heirloom rice or water lily (Olu) rice served alongside authentic clay pots of local lake fish, country chicken, breadfruit (del) or cassava, freshly shredded village mallum, and curd with treacle.",
-          fileUrl: "images/menu/A_lunch.jpg"
-        },
-        {
-          mealType: "DINNER",
-          title: "Hearthside Verandah Dinner",
-          mealDescription: "Fresh artisanal roast paan with tempered dhal, kurakkan pittu steamed in bamboo with coconut milk gravy and fresh wew maalu (lake fish), or string hoppers served under the night sky.",
-          fileUrl: "images/menu/lunch_sidedishes.jpg"
-        }
-      ];
-
-      let menuItems = fallbackMenus;
       try {
         const response = await fetch("/api/menu/all");
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data) && data.length > 0) menuItems = data;
-        }
-      } catch (e) {
-        console.info("Using curated fallback dining records:", e);
-      }
+        if (!response.ok) return;
 
-      container.innerHTML = menuItems.map(item => `
-            <div style="background: #FFFFFF; border: 1px solid #EFE9DE; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(27,59,43,0.03);">
-              <div style="height: 190px; width: 100%; overflow: hidden; background: #2D3748;">
-                <img src="${item.fileUrl || 'images/menu/A_lunch.jpg'}" alt="${item.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-              </div>
-              <div style="padding: 24px; display: flex; flex-direction: column; flex-grow: 1;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <span style="font-size: 0.75rem; font-weight: 700; color: #8A7352; text-transform: uppercase; letter-spacing: 0.5px;">${item.mealType}</span>
-                  <span class="pill-badge" style="font-size: 0.7rem;">Village Style</span>
-                </div>
-                <h4 style="font-size: 1.2rem; color: #1B3B2B; margin-bottom: 8px;">${item.title}</h4>
-                <p style="font-size: 0.88rem; color: #6B726C; line-height: 1.5; margin: 0;">${item.mealDescription}</p>
-              </div>
+        const data = await response.json();
+        if (!Array.isArray(data)) return;
+
+        // Only display active dishes where available is true
+        const activeItems = data.filter(item => item.available === true);
+
+         container.innerHTML = activeItems.map(item => `
+          <div style="background: #FFFFFF; border: 1px solid #EFE9DE; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(27,59,43,0.03);">
+            <div style="height: 190px; width: 100%; overflow: hidden; background: #2D3748;">
+              <img src="${item.fileUrl || 'images/menu/A_lunch.jpg'}" alt="${item.title || 'Dish'}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
             </div>
-          `).join("");
+            <div style="padding: 24px; display: flex; flex-direction: column; flex-grow: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: #8A7352; text-transform: uppercase; letter-spacing: 0.5px;">${item.mealType || 'MEAL'}</span>
+                <span class="pill-badge" style="font-size: 0.7rem;">Village Style</span>
+              </div>
+              <h4 style="font-size: 1.2rem; color: #1B3B2B; margin-bottom: 8px;">${item.title || ''}</h4>
+              <p style="font-size: 0.88rem; color: #6B726C; line-height: 1.5; margin: 0;">${item.mealDescription || ''}</p>
+            </div>
+          </div>
+        `).join("");
+      } catch (e) {
+        console.error("Failed to load dynamic menu:", e);
+      }
     }
 
   // 4. Fetch & Render Approved Reviews directly from MySQL Database

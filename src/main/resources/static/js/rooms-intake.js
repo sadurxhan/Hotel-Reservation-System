@@ -93,41 +93,64 @@
   };
 
   // 4. Request dynamic pricing estimation from Member 2's API
-  window.recalculateDynamicPrice = async function () {
-    const checkIn = document.getElementById("formCheckIn")?.value;
-    const checkOut = document.getElementById("formCheckOut")?.value;
-    const roomSelect = document.getElementById("formRoomSelect");
-    const liveTotalEl = document.getElementById("pricingLiveTotal");
-    const nightsEl = document.getElementById("pricingNightsCount");
-    const tierStatusEl = document.getElementById("pricingTierStatus");
+    window.recalculateDynamicPrice = async function () {
+      const checkIn = document.getElementById("formCheckIn")?.value;
+      const checkOut = document.getElementById("formCheckOut")?.value;
+      const roomSelect = document.getElementById("formRoomSelect");
+      const liveTotalEl = document.getElementById("pricingLiveTotal");
+      const nightsEl = document.getElementById("pricingNightsCount");
+      const tierStatusEl = document.getElementById("pricingTierStatus");
 
-    if (!checkIn || !checkOut || !roomSelect || !liveTotalEl) return;
+      if (!checkIn || !checkOut || !roomSelect || !liveTotalEl) return;
 
-    // Calculate nights
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const nights = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-    if (nightsEl) nightsEl.innerText = `${nights} Night${nights > 1 ? "s" : ""}`;
+      // Calculate nights
+      const start = new Date(checkIn);
+      const end = new Date(checkOut);
+      const nights = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+      if (nightsEl) nightsEl.innerText = `${nights} Night${nights > 1 ? "s" : ""}`;
 
-    const roomId = roomSelect.value;
-    liveTotalEl.innerText = "Calculating...";
+      const roomId = roomSelect.value;
+      liveTotalEl.innerText = "Calculating...";
 
-    if (typeof window.calculateStayDynamicPrice === "function") {
-      const priceDto = await window.calculateStayDynamicPrice(roomId, checkIn, checkOut);
-      if (priceDto && priceDto.totalPrice !== undefined) {
-        liveTotalEl.innerText = `LKR ${Number(priceDto.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-        if (tierStatusEl && priceDto.appliedTier) {
-          tierStatusEl.innerText = priceDto.appliedTier;
+      try {
+        // Query the backend pricing API directly
+        const res = await fetch(`/api/pricing/calculate?roomId=${encodeURIComponent(roomId)}&checkInDate=${encodeURIComponent(checkIn)}&checkOutDate=${encodeURIComponent(checkOut)}`);
+
+        if (res.ok) {
+          const data = await res.json();
+
+          // Handle all possible backend property naming variants
+          const finalPrice = data.totalCalculatedPrice ?? data.totalPrice ?? (data.baseNightlyRate ? data.baseNightlyRate * nights : null);
+
+          if (finalPrice !== null && finalPrice !== undefined) {
+            liveTotalEl.innerText = `LKR ${Number(finalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Check if any package or discount applied
+            const pkg = data.dailyBreakdown?.[0]?.appliedPackage || data.appliedPackage;
+            const mult = data.dailyBreakdown?.[0]?.multiplier;
+
+            if (tierStatusEl) {
+              if (pkg && pkg !== "Standard" && pkg !== "Standard Base Rate") {
+                const discountText = mult && mult < 1.0 ? ` (${Math.round((1 - mult) * 100)}% Discount)` : "";
+                tierStatusEl.innerText = `${pkg}${discountText}`;
+              } else {
+                tierStatusEl.innerText = "Standard Base Rate";
+              }
+            }
+            return;
+          }
         }
-        return;
+      } catch (err) {
+        console.warn("Direct pricing fetch failed, falling back:", err);
       }
-    }
 
-    // Fallback display if dynamic engine is loading
-    const defaultRates = { "1": 19500, "2": 16500, "3": 35000 };
-    const est = (defaultRates[roomId] || 20000) * nights;
-    liveTotalEl.innerText = `LKR ${est.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-  };
+      // Dynamic database rates fallback (Suite 01: 19500, Suite 02: 15000, Buyout: 35000)
+      const fallbackRates = { "1": 19500, "2": 15000, "3": 35000 };
+      const rate = fallbackRates[roomId] || 15000;
+      const est = rate * nights;
+      liveTotalEl.innerText = `LKR ${est.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      if (tierStatusEl) tierStatusEl.innerText = "Standard Base Rate";
+    };
 
   // 5. Validation Helpers
   function setFieldValid(inputId, errId) {

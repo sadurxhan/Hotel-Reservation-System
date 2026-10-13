@@ -20,17 +20,20 @@ public class ReservationService {
     private final GuestRepository guestRepository;
     private final RoomRepository roomRepository;
     private final CalendarBlockRepository calendarBlockRepository;
+    private final PricingEngineService pricingEngineService;
 
     public ReservationService(ReservationRepository reservationRepository,
                               ReservationRoomSelectionRepository selectionRepository,
                               GuestRepository guestRepository,
                               RoomRepository roomRepository,
-                              CalendarBlockRepository calendarBlockRepository) {
+                              CalendarBlockRepository calendarBlockRepository,
+                              PricingEngineService pricingEngineService) {
         this.reservationRepository = reservationRepository;
         this.selectionRepository = selectionRepository;
         this.guestRepository = guestRepository;
         this.roomRepository = roomRepository;
         this.calendarBlockRepository = calendarBlockRepository;
+        this.pricingEngineService = pricingEngineService;
     }
 
     // --------------------------------------------------
@@ -127,19 +130,25 @@ public class ReservationService {
 
         long nights = ChronoUnit.DAYS.between(request.getCheckInDate(), request.getCheckOutDate());
 
+        BigDecimal totalAmount;
         BigDecimal pricePerNight;
-        if (room.getTier() != null && room.getTier().getBaseRate() != null && room.getTier().getBaseRate().compareTo(new BigDecimal("10000.00")) != 0) {
-            pricePerNight = room.getTier().getBaseRate();
-        } else {
-            // Authentic rates matching hotel room options
-            pricePerNight = switch (room.getRoomId()) {
-                case 1 -> new BigDecimal("19500.00");
-                case 2 -> new BigDecimal("16500.00");
-                default -> new BigDecimal("35000.00");
-            };
+
+        try {
+            var priceDto = pricingEngineService.calculatePrice(
+                    room.getRoomId(),
+                    request.getCheckInDate(),
+                    request.getCheckOutDate()
+            );
+            totalAmount = priceDto.getTotalCalculatedPrice();
+            pricePerNight = totalAmount.divide(BigDecimal.valueOf(nights), 2, java.math.RoundingMode.HALF_UP);
+        } catch (Exception ex) {
+            // Safe fallback if room has no tier assigned in DB
+            pricePerNight = (room.getTier() != null && room.getTier().getBaseRate() != null)
+                    ? room.getTier().getBaseRate()
+                    : (room.getRoomId() == 3 ? new BigDecimal("35000.00") : new BigDecimal("19500.00"));
+            totalAmount = pricePerNight.multiply(BigDecimal.valueOf(nights));
         }
 
-        BigDecimal totalAmount = pricePerNight.multiply(BigDecimal.valueOf(nights));
 
         Reservation reservation = new Reservation();
         reservation.setGuest(guest);

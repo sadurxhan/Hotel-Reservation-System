@@ -61,8 +61,11 @@ public class PricingController {
      */
     @GetMapping("/packages")
     public ResponseEntity<List<RateOverride>> getActivePackages() {
-        List<RateOverride> activePackages = rateOverrideRepository.findByIsActiveTrue();
-        return ResponseEntity.ok(activePackages);
+        // Filter out internal surcharges (> 1.0) so guests only see actual discounts / special offers (< 1.0)
+        List<RateOverride> promotionalDiscounts = rateOverrideRepository.findByIsActiveTrue().stream()
+                .filter(p -> p.getRateMultiplier() != null && p.getRateMultiplier().compareTo(java.math.BigDecimal.ONE) < 0)
+                .toList();
+        return ResponseEntity.ok(promotionalDiscounts);
     }
 
     /**
