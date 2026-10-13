@@ -42,11 +42,18 @@ public class BillingPageController {
     // PayHere return_url lands here. The notify may arrive a moment later,
     // so the template should show "Processing..." while status is PENDING.
     @GetMapping("/payment/result")
-    public String paymentResultPage(@RequestParam String paymentId, Model model) {
-        Payment payment = paymentService.getPayment(paymentId);
+    public String paymentResultPage(
+            @RequestParam(value = "paymentId", required = false) String paymentId,
+            @RequestParam(value = "order_id", required = false) String orderId,
+            Model model) {
+        String id = (paymentId != null && !paymentId.isBlank()) ? paymentId : orderId;
+        if (id == null || id.isBlank()) {
+            throw new ResourceNotFoundException("Missing payment reference");
+        }
+        Payment payment = paymentService.getPayment(id);
         model.addAttribute("payment", payment);
         if (payment.getPaymentStatus() == Payment.PaymentStatus.PAID) {
-            model.addAttribute("invoice", invoiceService.getInvoiceByPaymentId(paymentId));
+            model.addAttribute("invoice", invoiceService.getInvoiceByPaymentId(id));
         }
         return "billing/payment-result";
     }
