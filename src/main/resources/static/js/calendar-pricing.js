@@ -31,22 +31,127 @@
       if (response.ok) {
         activePackagesList = await response.json();
         renderPackageBadges();
+        renderPackagesShowcase();
+      } else {
+        renderPackagesShowcase();
       }
     } catch (err) {
-      // Local fallback
+      renderPackagesShowcase();
     }
   }
 
   function renderPackageBadges() {
     const container = document.getElementById("calendarPackagesContainer");
-    if (!container || !activePackagesList.length) return;
+    if (!container) return;
+    if (!activePackagesList.length) {
+      container.innerHTML = "";
+      return;
+    }
 
     container.innerHTML = activePackagesList.map(pkg => `
       <span class="package-badge">
-        🏷️ ${pkg.packageTitle || 'Seasonal Rate'} (${pkg.rateMultiplier}x)
+        🏷️ ${pkg.packageName || pkg.packageTitle || 'Seasonal Rate'} (${Number(pkg.rateMultiplier || 1.0).toFixed(2)}x)
       </span>
     `).join("");
   }
+
+  function formatDateDisplay(dateStr) {
+    if (!dateStr) return "";
+    const parts = String(dateStr).split("-");
+    if (parts.length === 3) {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${months[mIdx] || parts[1]} ${parseInt(parts[2], 10)}, ${parts[0]}`;
+    }
+    return dateStr;
+  }
+
+  function renderPackagesShowcase() {
+    const grid = document.getElementById("activePackagesGrid");
+    const placeholder = document.getElementById("noPackagesPlaceholder");
+    if (!grid) return;
+
+    if (!activePackagesList || activePackagesList.length === 0) {
+      grid.style.display = "none";
+      if (placeholder) placeholder.style.display = "block";
+      return;
+    }
+
+    grid.style.display = "grid";
+    if (placeholder) placeholder.style.display = "none";
+
+    grid.innerHTML = activePackagesList.map(pkg => {
+      const mult = Number(pkg.rateMultiplier || 1.0);
+      let badgeHtml = "";
+      if (mult < 1.0) {
+        const discount = Math.round((1.0 - mult) * 100);
+        badgeHtml = `<span class="pkg-card-badge discount">${discount}% OFF DISCOUNT</span>`;
+      } else if (mult > 1.0) {
+        const surge = Math.round((mult - 1.0) * 100);
+        badgeHtml = `<span class="pkg-card-badge peak">+${surge}% PEAK SEASON SURGE</span>`;
+      } else {
+        badgeHtml = `<span class="pkg-card-badge special">EXCLUSIVE SPECIAL</span>`;
+      }
+
+      const minNights = pkg.minNights || 1;
+      const minStayLabel = `${minNights} night${minNights > 1 ? 's' : ''}`;
+
+      let roomScope = "Entire Villa / Both Lofts";
+      if (pkg.room) {
+        const rNum = String(pkg.room.roomNumber || "");
+        if (rNum === "01" || rNum === "1" || (pkg.room.roomType && pkg.room.roomType.toLowerCase().includes("front"))) {
+          roomScope = "Room 01 (The Front Loft)";
+        } else if (rNum === "02" || rNum === "2" || (pkg.room.roomType && pkg.room.roomType.toLowerCase().includes("cozy"))) {
+          roomScope = "Room 02 (The Cozy Loft)";
+        } else {
+          roomScope = `Room ${rNum}`;
+        }
+      }
+
+      const datesText = (pkg.startDate && pkg.endDate)
+        ? `<div class="pkg-dates">📅 Valid: ${formatDateDisplay(pkg.startDate)} – ${formatDateDisplay(pkg.endDate)}</div>`
+        : "";
+
+      const safeName = (pkg.packageName || "Seasonal Package").replace(/"/g, '&quot;');
+      const safeDesc = (pkg.packageDescription || "Exclusive promotional stay experience with Lakefront dining and scenic views.").replace(/"/g, '&quot;');
+
+      return `
+        <div class="package-card">
+          <div class="pkg-card-top">
+            ${badgeHtml}
+            <span class="pkg-scope-tag">${roomScope}</span>
+          </div>
+          <h3 class="pkg-title">${safeName}</h3>
+          <p class="pkg-desc">${safeDesc}</p>
+          ${datesText}
+          <div class="pkg-card-footer">
+            <div class="pkg-condition">
+              <span class="condition-label">Condition:</span>
+              <span class="condition-val">Min stay: ${minStayLabel}</span>
+            </div>
+            <button type="button" class="btn btn-gold pkg-cta-btn" onclick="selectPackageAndScroll('${safeName}')">
+              Select Package &amp; Book Dates &darr;
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  window.selectPackageAndScroll = function (packageName) {
+    const calendarEl = document.getElementById("calendar");
+    if (calendarEl) {
+      calendarEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    showCalendarNotice(`Selected offer: ${packageName}. Choose your stay dates on the calendar below.`, "success");
+  };
+
+  window.scrollToCalendar = function () {
+    const calendarEl = document.getElementById("calendar");
+    if (calendarEl) {
+      calendarEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   async function fetchMonthlyBlocks(year, month) {
     const firstDay = `${year}-${String(month + 1).padStart(2, "0")}-01`;

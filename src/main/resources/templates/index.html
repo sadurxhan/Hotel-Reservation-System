@@ -239,6 +239,7 @@
         <nav>
             <ul class="nav-links">
                 <li><a href="#lofts">Rooms</a></li>
+                <li><a href="#packages">Special Offers</a></li>
                 <li><a href="#calendar">Reservation</a></li>
                 <li><a href="#experiences">Experiences</a></li>
                 <li><a href="#reviews">Reviews</a></li>
@@ -484,6 +485,32 @@
             <h4 style="color: #fff; font-size: 1.7rem; margin: 0 0 15px;">LKR 35,000 <small style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">/ night</small></h4>
             <button class="btn btn-gold" onclick="selectRoomAndScroll(3, 'Both Rooms (Entire Lodge)')" style="width: 100%;">Reserve Both Rooms</button>
         </div>
+    </div>
+</section>
+
+<!-- ================= SPECIAL PACKAGES & SEASONAL OFFERS (MEMBER 2 SCOPE) ================= -->
+<section id="packages" class="packages-section container">
+    <div class="section-head" style="text-align: center; max-width: 680px; margin: 0 auto 36px;">
+        <div class="pill-badge">Special Packages &amp; Seasonal Offers</div>
+        <h2 style="font-family: var(--font-serif, 'Playfair Display', Georgia, serif); font-size: clamp(1.9rem, 3.2vw, 2.5rem); color: var(--primary-green, #1B3B2B); margin: 12px 0 10px;">Seasonal Packages &amp; Stay Specials</h2>
+        <p style="color: var(--text-muted, #6B726C); font-size: 0.96rem; line-height: 1.6;">
+            Enjoy exclusive promotions, long stay advantages, and seasonal package rates designed for private lakefront tranquility.
+        </p>
+    </div>
+
+    <!-- Active Packages Grid (Populated dynamically from /api/pricing/packages) -->
+    <div id="activePackagesGrid" class="packages-grid">
+        <!-- Rendered dynamically by calendar-pricing.js -->
+    </div>
+
+    <!-- Subtle Placeholder Card when no seasonal promotions are active -->
+    <div id="noPackagesPlaceholder" class="no-packages-card" style="display: none;">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">✨</div>
+        <h4 style="font-family: var(--font-serif, 'Playfair Display', serif); color: var(--primary-green, #1B3B2B); margin-bottom: 6px;">Standard Rates Currently in Effect</h4>
+        <p style="color: var(--text-muted, #6B726C); font-size: 0.92rem; max-width: 460px; margin: 0 auto 20px; line-height: 1.5;">
+            There are no seasonal promotional packages active today. Discover open dates and reserve your private lakefront stay using our live calendar below.
+        </p>
+        <button type="button" class="btn btn-gold" onclick="scrollToCalendar()">View Live Calendar Availability &rarr;</button>
     </div>
 </section>
 

@@ -1227,24 +1227,39 @@
     const rateSelect = document.getElementById("rateRoomSelect");
     const filterSelect = document.getElementById("blockRoomFilter");
 
+    const room1 = (state.rooms || []).find(r => r.roomNumber === "01" || r.roomNumber === "1" || (r.roomType && r.roomType.toLowerCase().includes("front")));
+    const room2 = (state.rooms || []).find(r => r.roomNumber === "02" || r.roomNumber === "2" || (r.roomType && r.roomType.toLowerCase().includes("cozy")));
+
+    const room1Id = room1 ? room1.roomId : 1;
+    const room2Id = room2 ? room2.roomId : 2;
+
     if (blockSelect) {
       const cur = blockSelect.value;
-      blockSelect.innerHTML = `<option value="">Entire Villa (Property-Wide Maintenance)</option>` +
-        state.rooms.map(r => `<option value="${r.roomId}">${r.roomNumber || 'Room ' + r.roomId} (${r.roomType || 'Room'})</option>`).join("");
+      blockSelect.innerHTML = `
+        <option value="">Entire Villa (Property-Wide Maintenance)</option>
+        <option value="${room1Id}">Room 01 (The Front Loft)</option>
+        <option value="${room2Id}">Room 02 (The Cozy Loft)</option>
+      `;
       if (cur) blockSelect.value = cur;
     }
 
     if (rateSelect) {
       const cur = rateSelect.value;
-      rateSelect.innerHTML = `<option value="">Entire Villa / All Rooms</option>` +
-        state.rooms.map(r => `<option value="${r.roomId}">${r.roomNumber || 'Room ' + r.roomId} (${r.roomType || 'Room'})</option>`).join("");
+      rateSelect.innerHTML = `
+        <option value="">Entire Villa / All Rooms</option>
+        <option value="${room1Id}">Room 01 (The Front Loft)</option>
+        <option value="${room2Id}">Room 02 (The Cozy Loft)</option>
+      `;
       if (cur) rateSelect.value = cur;
     }
 
     if (filterSelect) {
       const currentVal = filterSelect.value || "ALL";
-      filterSelect.innerHTML = `<option value="ALL">All Scopes</option><option value="Entire Villa">Entire Villa Only</option>` +
-        state.rooms.map(r => `<option value="${r.roomNumber || 'Room ' + r.roomId}">${r.roomNumber || 'Room ' + r.roomId}</option>`).join("");
+      filterSelect.innerHTML = `
+        <option value="ALL">All Scopes / Entire Villa</option>
+        <option value="01">Room 01 (The Front Loft)</option>
+        <option value="02">Room 02 (The Cozy Loft)</option>
+      `;
       filterSelect.value = currentVal;
     }
   }
@@ -1295,9 +1310,11 @@
         roomText.includes(state.blockSearchQuery);
 
       let matchesScope = true;
-      if (state.blockRoomFilter !== "ALL") {
-        if (state.blockRoomFilter === "Entire Villa") {
-          matchesScope = !b.roomNumber || b.roomNumber === "Entire Villa";
+      if (state.blockRoomFilter && state.blockRoomFilter !== "ALL") {
+        if (state.blockRoomFilter === "01") {
+          matchesScope = b.roomNumber === "01" || b.roomNumber === "1" || b.roomId === 1 || (b.roomNumber && b.roomNumber.toLowerCase().includes("front"));
+        } else if (state.blockRoomFilter === "02") {
+          matchesScope = b.roomNumber === "02" || b.roomNumber === "2" || b.roomId === 2 || (b.roomNumber && b.roomNumber.toLowerCase().includes("cozy"));
         } else {
           matchesScope = b.roomNumber === state.blockRoomFilter;
         }
@@ -1329,9 +1346,19 @@
 
     tbody.innerHTML = paged.map(b => {
       const isVilla = !b.roomNumber || b.roomNumber === "Entire Villa";
+      let roomDisplay = "Entire Villa";
+      if (!isVilla) {
+        if (b.roomNumber === "01" || b.roomNumber === "1" || (b.roomNumber && b.roomNumber.includes("Front")) || b.roomId === 1) {
+          roomDisplay = "Room 01 (The Front Loft)";
+        } else if (b.roomNumber === "02" || b.roomNumber === "2" || (b.roomNumber && b.roomNumber.includes("Cozy")) || b.roomId === 2) {
+          roomDisplay = "Room 02 (The Cozy Loft)";
+        } else {
+          roomDisplay = b.roomNumber;
+        }
+      }
       const scopeBadge = isVilla
         ? `<span class="badge-pill status-unpaid" style="background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE;">Entire Villa</span>`
-        : `<span class="badge-pill status-active">${b.roomNumber}</span>`;
+        : `<span class="badge-pill status-active">${roomDisplay}</span>`;
 
       return `
         <tr>
@@ -1525,6 +1552,17 @@
       const multColor = mult > 1.0 ? "#B45309" : (mult < 1.0 ? "#059669" : "#1B3B2B");
       const multLabel = mult > 1.0 ? `+${Math.round((mult - 1) * 100)}% Surge` : (mult < 1.0 ? `-${Math.round((1 - mult) * 100)}% Discount` : "Standard");
 
+      let scopeDisplay = "Entire Villa / All Rooms";
+      if (r.roomNumber && r.roomNumber !== "Entire Villa" && r.roomNumber !== "Entire Villa / All Rooms") {
+        if (r.roomNumber === "01" || r.roomNumber === "1" || (typeof r.roomNumber === "string" && r.roomNumber.includes("Front")) || r.roomId === 1) {
+          scopeDisplay = "Room 01 (The Front Loft)";
+        } else if (r.roomNumber === "02" || r.roomNumber === "2" || (typeof r.roomNumber === "string" && r.roomNumber.includes("Cozy")) || r.roomId === 2) {
+          scopeDisplay = "Room 02 (The Cozy Loft)";
+        } else {
+          scopeDisplay = r.roomNumber;
+        }
+      }
+
       return `
         <tr>
           <td><strong>#${r.rateId}</strong></td>
@@ -1540,7 +1578,7 @@
           </td>
           <td>${r.minNights || 1} Night${(r.minNights || 1) > 1 ? 's' : ''}</td>
           <td>
-            <span style="font-size: 0.8rem; color: #1B3B2B; font-weight: 500;">${r.roomNumber || 'Entire Villa'}</span>
+            <span style="font-size: 0.8rem; color: #1B3B2B; font-weight: 500;">${scopeDisplay}</span>
           </td>
           <td>
             <span class="badge-pill ${statusClass}">${isActive ? 'ACTIVE' : 'INACTIVE'}</span>

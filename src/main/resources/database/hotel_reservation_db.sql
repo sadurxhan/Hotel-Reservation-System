@@ -211,17 +211,13 @@ INSERT INTO guest (guest_id, fname, lname, email, phone_no) VALUES
 
 -- IT25102812
 INSERT INTO room (room_id, room_number, room_type, room_description, capacity, room_status, is_active, tier_id) VALUES
-(1, '101', 'Deluxe Ocean View', 'Spacious king-bed room with sea view', 2, 'AVAILABLE', TRUE, 1),
-(2, '102', 'Standard Double', 'Comfortable double bed room', 2, 'AVAILABLE', TRUE, 2),
-(3, '201', 'Family Suite', 'Two-bedroom suite with living area', 4, 'AVAILABLE', TRUE, 4),
-(4, '202', 'Executive Suite', 'Luxury suite with private balcony', 3, 'MAINTENANCE', TRUE, 4);
+(1, '01', 'The Front Loft', 'Our larger room situated at the front of the stilted structure with spacious loft beds', 2, 'AVAILABLE', TRUE, 1),
+(2, '02', 'The Cozy Loft', 'Intimate room with identical earthy clay wall finishes overlooking village paddy fields', 2, 'AVAILABLE', TRUE, 2);
 
 -- IT25102812
 INSERT INTO room_pricing_tier (tier_id, room_id, guest_count, tier_name, base_rate) VALUES
-(1, 1, 1, 'Single Occupancy', 10000.00),
-(2, 1, 2, 'Double Occupancy', 15000.00),
-(3, 2, 2, 'Standard Rate', 9000.00),
-(4, 3, 4, 'Family Package', 25000.00);
+(1, 1, 1, 'The Front Loft (Room 01)', 19500.00),
+(2, 2, 1, 'The Cozy Loft (Room 02)', 16500.00);
 
 -- Main tables used for bookings
 
@@ -235,7 +231,7 @@ INSERT INTO reservation (reservation_id, guest_id, check_in_date, check_out_date
 -- IT25102812
 INSERT INTO reservation_room_selection (selection_id, reservation_id, room_id, no_of_guests, calc_room_price_per_night) VALUES
 (1, 101, 1, 2, 15000.00),
-(2, 102, 3, 4, 25000.00),
+(2, 102, 2, 2, 16500.00),
 (3, 103, 2, 1, 9000.00),
 (4, 104, 1, 2, 15000.00);
 
