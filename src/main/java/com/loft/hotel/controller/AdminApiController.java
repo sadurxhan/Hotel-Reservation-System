@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -41,6 +43,10 @@ public class AdminApiController {
     private final ActivityService activityService;
     private final FileStorageService fileStorageService;
     private final AdminGuard adminGuard;
+    private final CalendarAdminService calendarAdminService;
+    private final CalendarBlockRepository calendarBlockRepository;
+    private final RateOverrideRepository rateOverrideRepository;
+    private final RoomRepository roomRepository;
 
     @Value("${app.admin-key}")
     private String configuredAdminKey;
@@ -61,7 +67,11 @@ public class AdminApiController {
             MenuShowcaseService menuShowcaseService,
             ActivityService activityService,
             FileStorageService fileStorageService,
-            AdminGuard adminGuard) {
+            AdminGuard adminGuard,
+            CalendarAdminService calendarAdminService,
+            CalendarBlockRepository calendarBlockRepository,
+            RateOverrideRepository rateOverrideRepository,
+            RoomRepository roomRepository) {
         this.reservationService = reservationService;
         this.reservationRepository = reservationRepository;
         this.paymentService = paymentService;
@@ -75,6 +85,10 @@ public class AdminApiController {
         this.activityService = activityService;
         this.fileStorageService = fileStorageService;
         this.adminGuard = adminGuard;
+        this.calendarAdminService = calendarAdminService;
+        this.calendarBlockRepository = calendarBlockRepository;
+        this.rateOverrideRepository = rateOverrideRepository;
+        this.roomRepository = roomRepository;
     }
 
     private void verifyAccess(String keyHeader, HttpSession session) {
@@ -671,4 +685,402 @@ public class AdminApiController {
         activityService.deleteActivity(id);
         return ResponseEntity.ok(Map.of("success", true, "message", "Activity deleted successfully."));
     }
+
+    // ----------------------------------------------------
+    // 8. CALENDAR AVAILABILITY & MAINTENANCE BLOCKS
+    // ----------------------------------------------------
+    @GetMapping("/calendar/blocks")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getCalendarBlocks(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            List<CalendarBlock> blocks = new ArrayList<>(calendarBlockRepository.findAll());
+            blocks.sort((a, b) -> {
+                if (a.getBlockedDate() == null && b.getBlockedDate() == null) return 0;
+                if (a.getBlockedDate() == null) return 1;
+                if (b.getBlockedDate() == null) return -1;
+                return b.getBlockedDate().compareTo(a.getBlockedDate());
+            });
+
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (CalendarBlock cb : blocks) {
+                if (cb == null) continue;
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("blockId", cb.getBlockId());
+                row.put("blockedDate", cb.getBlockedDate());
+                row.put("source", cb.getSource());
+                row.put("externalUid", cb.getExternalUid());
+                row.put("roomNumber", cb.getRoom() != null ? cb.getRoom().getRoomNumber() : "Entire Villa");
+                row.put("roomId", cb.getRoom() != null ? cb.getRoom().getRoomId() : null);
+                row.put("createdAt", cb.getCreatedAt());
+                result.add(row);
+            }
+
+            return ResponseEntity.ok(result);
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error in getCalendarBlocks", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error loading calendar blocks: " + ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/calendar/blocks")
+    @Transactional
+    public ResponseEntity<?> createCalendarBlocks(
+            @RequestBody(required = false) Map<String, Object> body,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Integer roomId,
+            @RequestParam(required = false) String reason,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            LocalDate start = startDate;
+            LocalDate end = endDate;
+            Integer rId = roomId;
+            String rsn = reason;
+
+            if (body != null) {
+                if (start == null && body.get("startDate") != null && !body.get("startDate").toString().isBlank()) {
+                    start = LocalDate.parse(body.get("startDate").toString().trim());
+                }
+                if (end == null && body.get("endDate") != null && !body.get("endDate").toString().isBlank()) {
+                    end = LocalDate.parse(body.get("endDate").toString().trim());
+                }
+                if (rId == null && body.get("roomId") != null && !body.get("roomId").toString().isBlank()) {
+                    try {
+                        int parsed = Integer.parseInt(body.get("roomId").toString().trim());
+                        if (parsed > 0) rId = parsed;
+                    } catch (NumberFormatException ignored) {}
+                }
+                if (rsn == null && body.get("reason") != null) {
+                    rsn = body.get("reason").toString().trim();
+                }
+            }
+
+            if (start == null || end == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Start date and end date are required."));
+            }
+            if (end.isBefore(start)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "End date cannot be earlier than start date."));
+            }
+
+            List<CalendarBlock> created = calendarAdminService.blockDateRange(rId, start, end, rsn);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Successfully created " + created.size() + " calendar block(s).",
+                    "count", created.size(),
+                    "blocks", created
+            ));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("message", iae.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error creating calendar blocks", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error creating calendar blocks: " + ex.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/calendar/blocks/{blockId}")
+    @Transactional
+    public ResponseEntity<?> deleteCalendarBlock(
+            @PathVariable Integer blockId,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            Optional<CalendarBlock> blockOpt = calendarBlockRepository.findById(blockId);
+            if (blockOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Calendar block not found with ID: " + blockId));
+            }
+
+            calendarBlockRepository.deleteById(blockId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Calendar block deleted successfully."));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error deleting calendar block", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error deleting calendar block: " + ex.getMessage()));
+        }
+    }
+
+    // ----------------------------------------------------
+    // 9. RATE OVERRIDES & PROMOTIONAL PACKAGES
+    // ----------------------------------------------------
+    @GetMapping("/rates/overrides")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getRateOverrides(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            List<RateOverride> list = new ArrayList<>(rateOverrideRepository.findAll());
+            list.sort((a, b) -> {
+                if (a.getRateId() == null && b.getRateId() == null) return 0;
+                if (a.getRateId() == null) return 1;
+                if (b.getRateId() == null) return -1;
+                return b.getRateId().compareTo(a.getRateId());
+            });
+
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (RateOverride ro : list) {
+                if (ro == null) continue;
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("rateId", ro.getRateId());
+                row.put("packageName", ro.getPackageName() != null ? ro.getPackageName() : "Custom Override");
+                row.put("packageDescription", ro.getPackageDescription() != null ? ro.getPackageDescription() : "");
+                row.put("startDate", ro.getStartDate());
+                row.put("endDate", ro.getEndDate());
+                row.put("rateMultiplier", ro.getRateMultiplier() != null ? ro.getRateMultiplier() : BigDecimal.ONE);
+                row.put("minNights", ro.getMinNights() != null ? ro.getMinNights() : 1);
+                row.put("isActive", ro.getIsActive() != null ? ro.getIsActive() : true);
+                row.put("roomId", ro.getRoom() != null ? ro.getRoom().getRoomId() : null);
+                row.put("roomNumber", ro.getRoom() != null ? ro.getRoom().getRoomNumber() : "Entire Villa / All Rooms");
+                row.put("createdAt", ro.getCreatedAt());
+                result.add(row);
+            }
+
+            return ResponseEntity.ok(result);
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error in getRateOverrides", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error loading rate overrides: " + ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/rates/overrides")
+    @Transactional
+    public ResponseEntity<?> createRateOverride(
+            @RequestBody(required = false) Map<String, Object> body,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            if (body == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Request body is required."));
+            }
+
+            String packageName = body.get("packageName") != null ? body.get("packageName").toString().trim() : null;
+            if (packageName == null || packageName.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Package/Rule name is required."));
+            }
+
+            String desc = body.get("packageDescription") != null ? body.get("packageDescription").toString().trim() : "";
+
+            if (body.get("startDate") == null || body.get("startDate").toString().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Start date is required."));
+            }
+            if (body.get("endDate") == null || body.get("endDate").toString().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "End date is required."));
+            }
+
+            LocalDate startDate = LocalDate.parse(body.get("startDate").toString().trim());
+            LocalDate endDate = LocalDate.parse(body.get("endDate").toString().trim());
+            if (endDate.isBefore(startDate)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "End date cannot be earlier than start date."));
+            }
+
+            BigDecimal multiplier = BigDecimal.ONE;
+            if (body.get("rateMultiplier") != null && !body.get("rateMultiplier").toString().isBlank()) {
+                multiplier = new BigDecimal(body.get("rateMultiplier").toString().trim());
+            }
+
+            int minNights = 1;
+            if (body.get("minNights") != null && !body.get("minNights").toString().isBlank()) {
+                try {
+                    int parsed = Integer.parseInt(body.get("minNights").toString().trim());
+                    if (parsed > 0) minNights = parsed;
+                } catch (NumberFormatException ignored) {}
+            }
+
+            boolean isActive = true;
+            if (body.get("isActive") != null) {
+                isActive = Boolean.parseBoolean(body.get("isActive").toString().trim());
+            }
+
+            Room room = null;
+            if (body.get("roomId") != null && !body.get("roomId").toString().isBlank()) {
+                try {
+                    int rId = Integer.parseInt(body.get("roomId").toString().trim());
+                    if (rId > 0) {
+                        room = roomRepository.findById(rId).orElse(null);
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            RateOverride ro = new RateOverride();
+            ro.setPackageName(packageName);
+            ro.setPackageDescription(desc);
+            ro.setStartDate(startDate);
+            ro.setEndDate(endDate);
+            ro.setRateMultiplier(multiplier);
+            ro.setMinNights(minNights);
+            ro.setIsActive(isActive);
+            ro.setRoom(room);
+
+            RateOverride saved = rateOverrideRepository.save(ro);
+            return ResponseEntity.ok(saved);
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("message", iae.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error creating rate override", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error creating rate override: " + ex.getMessage()));
+        }
+    }
+
+    @PutMapping("/rates/overrides/{rateId}")
+    @Transactional
+    public ResponseEntity<?> updateRateOverride(
+            @PathVariable Integer rateId,
+            @RequestBody(required = false) Map<String, Object> body,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            Optional<RateOverride> opt = rateOverrideRepository.findById(rateId);
+            if (opt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Rate override not found with ID: " + rateId));
+            }
+
+            if (body == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Request body is required."));
+            }
+
+            RateOverride ro = opt.get();
+
+            if (body.containsKey("packageName")) {
+                String name = body.get("packageName") != null ? body.get("packageName").toString().trim() : null;
+                if (name != null && !name.isBlank()) {
+                    ro.setPackageName(name);
+                }
+            }
+            if (body.containsKey("packageDescription")) {
+                ro.setPackageDescription(body.get("packageDescription") != null ? body.get("packageDescription").toString().trim() : "");
+            }
+            if (body.containsKey("startDate") && body.get("startDate") != null && !body.get("startDate").toString().isBlank()) {
+                ro.setStartDate(LocalDate.parse(body.get("startDate").toString().trim()));
+            }
+            if (body.containsKey("endDate") && body.get("endDate") != null && !body.get("endDate").toString().isBlank()) {
+                ro.setEndDate(LocalDate.parse(body.get("endDate").toString().trim()));
+            }
+            if (ro.getEndDate().isBefore(ro.getStartDate())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "End date cannot be earlier than start date."));
+            }
+            if (body.containsKey("rateMultiplier") && body.get("rateMultiplier") != null && !body.get("rateMultiplier").toString().isBlank()) {
+                ro.setRateMultiplier(new BigDecimal(body.get("rateMultiplier").toString().trim()));
+            }
+            if (body.containsKey("minNights") && body.get("minNights") != null && !body.get("minNights").toString().isBlank()) {
+                try {
+                    int parsed = Integer.parseInt(body.get("minNights").toString().trim());
+                    if (parsed > 0) ro.setMinNights(parsed);
+                } catch (NumberFormatException ignored) {}
+            }
+            if (body.containsKey("isActive") && body.get("isActive") != null) {
+                ro.setIsActive(Boolean.parseBoolean(body.get("isActive").toString().trim()));
+            }
+            if (body.containsKey("roomId")) {
+                if (body.get("roomId") != null && !body.get("roomId").toString().isBlank()) {
+                    try {
+                        int rId = Integer.parseInt(body.get("roomId").toString().trim());
+                        if (rId > 0) {
+                            ro.setRoom(roomRepository.findById(rId).orElse(null));
+                        } else {
+                            ro.setRoom(null);
+                        }
+                    } catch (NumberFormatException ignored) {
+                        ro.setRoom(null);
+                    }
+                } else {
+                    ro.setRoom(null);
+                }
+            }
+
+            RateOverride updated = rateOverrideRepository.save(ro);
+            return ResponseEntity.ok(updated);
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(Map.of("message", iae.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error updating rate override", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error updating rate override: " + ex.getMessage()));
+        }
+    }
+
+    @PostMapping("/rates/overrides/{rateId}/toggle")
+    @Transactional
+    public ResponseEntity<?> toggleRateOverride(
+            @PathVariable Integer rateId,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            Optional<RateOverride> opt = rateOverrideRepository.findById(rateId);
+            if (opt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Rate override not found with ID: " + rateId));
+            }
+
+            RateOverride ro = opt.get();
+            ro.setIsActive(ro.getIsActive() == null || !ro.getIsActive());
+            RateOverride saved = rateOverrideRepository.save(ro);
+            return ResponseEntity.ok(saved);
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error toggling rate override", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error toggling rate override: " + ex.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/rates/overrides/{rateId}")
+    @Transactional
+    public ResponseEntity<?> deleteRateOverride(
+            @PathVariable Integer rateId,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            HttpSession session) {
+        try {
+            verifyAccess(key, session);
+
+            Optional<RateOverride> opt = rateOverrideRepository.findById(rateId);
+            if (opt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Rate override not found with ID: " + rateId));
+            }
+
+            rateOverrideRepository.deleteById(rateId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Rate override deleted successfully."));
+        } catch (SecurityException se) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", se.getMessage()));
+        } catch (Exception ex) {
+            log.error("Error deleting rate override", ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error deleting rate override: " + ex.getMessage()));
+        }
+    }
 }
+

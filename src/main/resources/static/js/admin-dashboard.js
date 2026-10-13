@@ -17,6 +17,9 @@
     menuItems: [],
     activities: [],
     reviews: [],
+    calendarBlocks: [],
+    rateOverrides: [],
+    rooms: [],
     overviewData: null,
     resSearchQuery: "",
     resStatusFilter: "ALL",
@@ -25,7 +28,13 @@
     resPageSize: 10,
     paySearchQuery: "",
     payStatusFilter: "ALL",
-    cancStatusFilter: "ALL"
+    cancStatusFilter: "ALL",
+    blockSearchQuery: "",
+    blockRoomFilter: "ALL",
+    blockCurrentPage: 1,
+    blockPageSize: 10,
+    rateSearchQuery: "",
+    rateStatusFilter: "ALL"
   };
 
   // ----------------------------------------------------
@@ -132,6 +141,8 @@
       cancellations: "Cancellation Requests",
       payments: "Billing & Payment History",
       refunds: "Guest Refund Reconciliation",
+      calendar: "Calendar Availability & Blocks",
+      rates: "Dynamic Pricing & Packages",
       menu: "Dining & Menu Showcase",
       activities: "Activities & Experiences",
       reviews: "Guest Reviews Moderation"
@@ -146,6 +157,8 @@
     if (tabName === "cancellations") loadCancellations();
     if (tabName === "payments") loadPayments();
     if (tabName === "refunds") loadRefunds();
+    if (tabName === "calendar") loadCalendarBlocks();
+    if (tabName === "rates") loadRateOverrides();
     if (tabName === "menu") loadMenu();
     if (tabName === "activities") loadActivities();
     if (tabName === "reviews") loadReviews();
@@ -1193,6 +1206,514 @@
   };
 
   // ----------------------------------------------------
+  // ROOMS HELPER (FOR CALENDAR & PRICING SCOPES)
+  // ----------------------------------------------------
+  async function loadRooms() {
+    if (state.rooms && state.rooms.length > 0) return state.rooms;
+    try {
+      const res = await fetch("/api/rooms");
+      if (res.ok) {
+        state.rooms = await res.json();
+        populateRoomDropdowns();
+      }
+    } catch (err) {
+      console.warn("Could not fetch rooms list:", err);
+    }
+    return state.rooms;
+  }
+
+  function populateRoomDropdowns() {
+    const blockSelect = document.getElementById("blockRoomSelect");
+    const rateSelect = document.getElementById("rateRoomSelect");
+    const filterSelect = document.getElementById("blockRoomFilter");
+
+    if (blockSelect) {
+      const cur = blockSelect.value;
+      blockSelect.innerHTML = `<option value="">Entire Villa (Property-Wide Maintenance)</option>` +
+        state.rooms.map(r => `<option value="${r.roomId}">${r.roomNumber || 'Room ' + r.roomId} (${r.roomType || 'Room'})</option>`).join("");
+      if (cur) blockSelect.value = cur;
+    }
+
+    if (rateSelect) {
+      const cur = rateSelect.value;
+      rateSelect.innerHTML = `<option value="">Entire Villa / All Rooms</option>` +
+        state.rooms.map(r => `<option value="${r.roomId}">${r.roomNumber || 'Room ' + r.roomId} (${r.roomType || 'Room'})</option>`).join("");
+      if (cur) rateSelect.value = cur;
+    }
+
+    if (filterSelect) {
+      const currentVal = filterSelect.value || "ALL";
+      filterSelect.innerHTML = `<option value="ALL">All Scopes</option><option value="Entire Villa">Entire Villa Only</option>` +
+        state.rooms.map(r => `<option value="${r.roomNumber || 'Room ' + r.roomId}">${r.roomNumber || 'Room ' + r.roomId}</option>`).join("");
+      filterSelect.value = currentVal;
+    }
+  }
+
+  // ----------------------------------------------------
+  // 9. CALENDAR BLOCKS & AVAILABILITY ENGINE
+  // ----------------------------------------------------
+  async function loadCalendarBlocks() {
+    const tbody = document.getElementById("calendarBlocksTbody");
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #94A3B8;">Loading calendar blocks...</td></tr>`;
+
+    try {
+      await loadRooms();
+      const res = await adminFetch("/api/admin/calendar/blocks");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to load calendar blocks.");
+      }
+      state.calendarBlocks = await res.json();
+      renderCalendarBlocksTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #EF4444;">${err.message}</td></tr>`;
+    }
+  }
+
+  window.handleBlockFilter = function () {
+    state.blockSearchQuery = (document.getElementById("blockSearchInput").value || "").toLowerCase().trim();
+    state.blockRoomFilter = document.getElementById("blockRoomFilter").value;
+    state.blockCurrentPage = 1;
+    renderCalendarBlocksTable();
+  };
+
+  function renderCalendarBlocksTable() {
+    const tbody = document.getElementById("calendarBlocksTbody");
+    if (!tbody) return;
+
+    let filtered = state.calendarBlocks.filter(b => {
+      const roomText = (b.roomNumber || "Entire Villa").toLowerCase();
+      const sourceText = (b.source || "").toLowerCase();
+      const dateText = (b.blockedDate || "").toLowerCase();
+      const idText = String(b.blockId || "");
+
+      const matchesSearch = !state.blockSearchQuery ||
+        idText.includes(state.blockSearchQuery) ||
+        dateText.includes(state.blockSearchQuery) ||
+        sourceText.includes(state.blockSearchQuery) ||
+        roomText.includes(state.blockSearchQuery);
+
+      let matchesScope = true;
+      if (state.blockRoomFilter !== "ALL") {
+        if (state.blockRoomFilter === "Entire Villa") {
+          matchesScope = !b.roomNumber || b.roomNumber === "Entire Villa";
+        } else {
+          matchesScope = b.roomNumber === state.blockRoomFilter;
+        }
+      }
+
+      return matchesSearch && matchesScope;
+    });
+
+    const total = filtered.length;
+    const startIndex = (state.blockCurrentPage - 1) * state.blockPageSize;
+    const paged = filtered.slice(startIndex, startIndex + state.blockPageSize);
+
+    const countNotice = document.getElementById("blockCountNotice");
+    if (countNotice) {
+      countNotice.innerText = total > 0
+        ? `Showing ${Math.min(startIndex + 1, total)}–${Math.min(startIndex + paged.length, total)} of ${total} calendar blocks`
+        : "No calendar blocks to display";
+    }
+
+    const prevBtn = document.getElementById("blockPrevBtn");
+    const nextBtn = document.getElementById("blockNextBtn");
+    if (prevBtn) prevBtn.disabled = state.blockCurrentPage <= 1;
+    if (nextBtn) nextBtn.disabled = startIndex + state.blockPageSize >= total;
+
+    if (paged.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 32px; color: #94A3B8;">No calendar blocks found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = paged.map(b => {
+      const isVilla = !b.roomNumber || b.roomNumber === "Entire Villa";
+      const scopeBadge = isVilla
+        ? `<span class="badge-pill status-unpaid" style="background:#EEF2FF; color:#4338CA; border:1px solid #C7D2FE;">Entire Villa</span>`
+        : `<span class="badge-pill status-active">${b.roomNumber}</span>`;
+
+      return `
+        <tr>
+          <td><strong>#${b.blockId}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: #1B3B2B;">${formatDate(b.blockedDate)}</div>
+            <div style="font-size: 0.72rem; color: #94A3B8;">${b.blockedDate || ''}</div>
+          </td>
+          <td>${scopeBadge}</td>
+          <td style="max-width: 280px;">
+            <div style="font-size: 0.85rem; color: #334155;">${b.source || 'MANUAL_ADMIN'}</div>
+            ${b.externalUid ? `<div style="font-size: 0.72rem; color: #94A3B8; font-family: monospace;">UID: ${b.externalUid.substring(0, 15)}...</div>` : ''}
+          </td>
+          <td>
+            <div style="font-size: 0.76rem; color: #64748B;">${formatDateTime(b.createdAt)}</div>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-danger" onclick="deleteBlock(${b.blockId})" title="Unblock Date">
+                Unblock / Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  window.blockPagePrev = function () {
+    if (state.blockCurrentPage > 1) {
+      state.blockCurrentPage--;
+      renderCalendarBlocksTable();
+    }
+  };
+
+  window.blockPageNext = function () {
+    state.blockCurrentPage++;
+    renderCalendarBlocksTable();
+  };
+
+  window.openBlockModal = async function () {
+    await loadRooms();
+    populateRoomDropdowns();
+
+    const form = document.getElementById("blockForm");
+    if (form) form.reset();
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const startInput = document.getElementById("blockStartDate");
+    const endInput = document.getElementById("blockEndDate");
+    if (startInput) startInput.value = todayStr;
+    if (endInput) endInput.value = todayStr;
+
+    document.getElementById("blockModalTitle").innerText = "Add Calendar Block";
+    document.getElementById("blockModal").classList.add("active");
+  };
+
+  window.closeBlockModal = function () {
+    document.getElementById("blockModal").classList.remove("active");
+  };
+
+  window.submitBlock = async function (event) {
+    event.preventDefault();
+    const startDate = document.getElementById("blockStartDate").value;
+    const endDate = document.getElementById("blockEndDate").value;
+    const roomIdVal = document.getElementById("blockRoomSelect").value;
+    const reason = document.getElementById("blockReason").value.trim();
+
+    if (!startDate || !endDate) {
+      showToast("Please specify both start date and end date.", "warning");
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      showToast("End date cannot be earlier than start date.", "warning");
+      return;
+    }
+
+    const submitBtn = document.getElementById("blockSubmitBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Blocking Dates...";
+
+    try {
+      const payload = {
+        startDate: startDate,
+        endDate: endDate,
+        roomId: roomIdVal ? parseInt(roomIdVal, 10) : null,
+        reason: reason
+      };
+
+      const res = await adminFetch("/api/admin/calendar/blocks", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to block dates.");
+      }
+
+      const data = await res.json();
+      showToast(data.message || "Calendar block(s) created successfully!");
+      closeBlockModal();
+      loadCalendarBlocks();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Save Block";
+    }
+  };
+
+  window.deleteBlock = function (blockId) {
+    showConfirmDialog(
+      "Unblock Calendar Date",
+      `Are you sure you want to delete calendar block <strong>#${blockId}</strong> and release this date for bookings?`,
+      "Unblock / Delete",
+      async () => {
+        try {
+          const res = await adminFetch(`/api/admin/calendar/blocks/${blockId}`, { method: "DELETE" });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || "Failed to delete calendar block.");
+          }
+          showToast("Calendar block removed successfully.");
+          loadCalendarBlocks();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+    );
+  };
+
+  // ----------------------------------------------------
+  // 10. DYNAMIC PRICING ENGINE & PACKAGES
+  // ----------------------------------------------------
+  async function loadRateOverrides() {
+    const tbody = document.getElementById("ratesTbody");
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94A3B8;">Loading pricing rules and packages...</td></tr>`;
+
+    try {
+      await loadRooms();
+      const res = await adminFetch("/api/admin/rates/overrides");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to load rate overrides.");
+      }
+      state.rateOverrides = await res.json();
+      renderRateOverridesTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: #EF4444;">${err.message}</td></tr>`;
+    }
+  }
+
+  window.handleRateFilter = function () {
+    state.rateSearchQuery = (document.getElementById("rateSearchInput").value || "").toLowerCase().trim();
+    state.rateStatusFilter = document.getElementById("rateStatusSelect").value;
+    renderRateOverridesTable();
+  };
+
+  function renderRateOverridesTable() {
+    const tbody = document.getElementById("ratesTbody");
+    if (!tbody) return;
+
+    let filtered = state.rateOverrides.filter(r => {
+      const nameText = (r.packageName || "").toLowerCase();
+      const descText = (r.packageDescription || "").toLowerCase();
+      const idText = String(r.rateId || "");
+
+      const matchesSearch = !state.rateSearchQuery ||
+        idText.includes(state.rateSearchQuery) ||
+        nameText.includes(state.rateSearchQuery) ||
+        descText.includes(state.rateSearchQuery);
+
+      let matchesStatus = true;
+      if (state.rateStatusFilter === "ACTIVE") matchesStatus = Boolean(r.isActive);
+      if (state.rateStatusFilter === "INACTIVE") matchesStatus = !Boolean(r.isActive);
+
+      return matchesSearch && matchesStatus;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 32px; color: #94A3B8;">No dynamic pricing rules or packages found. Click "+ Add Pricing Rule" above to create one.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(r => {
+      const isActive = Boolean(r.isActive);
+      const statusClass = isActive ? "status-active" : "status-unpaid";
+      const mult = Number(r.rateMultiplier || 1.0);
+      const multColor = mult > 1.0 ? "#B45309" : (mult < 1.0 ? "#059669" : "#1B3B2B");
+      const multLabel = mult > 1.0 ? `+${Math.round((mult - 1) * 100)}% Surge` : (mult < 1.0 ? `-${Math.round((1 - mult) * 100)}% Discount` : "Standard");
+
+      return `
+        <tr>
+          <td><strong>#${r.rateId}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: #1B3B2B;">${r.packageName || "Custom Override"}</div>
+            <div style="font-size: 0.76rem; color: #64748B; max-width: 220px; line-height: 1.3;">${r.packageDescription || "No description"}</div>
+          </td>
+          <td>${formatDate(r.startDate)}</td>
+          <td>${formatDate(r.endDate)}</td>
+          <td>
+            <strong style="color: ${multColor}; font-size: 0.95rem;">${mult.toFixed(2)}x</strong>
+            <div style="font-size: 0.72rem; color: #94A3B8;">${multLabel}</div>
+          </td>
+          <td>${r.minNights || 1} Night${(r.minNights || 1) > 1 ? 's' : ''}</td>
+          <td>
+            <span style="font-size: 0.8rem; color: #1B3B2B; font-weight: 500;">${r.roomNumber || 'Entire Villa'}</span>
+          </td>
+          <td>
+            <span class="badge-pill ${statusClass}">${isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-secondary" onclick="openRateModal(true, ${r.rateId})" title="Edit Rule">Edit</button>
+              <button class="btn btn-sm btn-secondary" onclick="toggleRate(${r.rateId})" title="Toggle Active">
+                ${isActive ? 'Deactivate' : 'Activate'}
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteRate(${r.rateId})" title="Delete Rule">✕</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  window.openRateModal = async function (isEdit = false, rateIdOrData = null) {
+    await loadRooms();
+    populateRoomDropdowns();
+
+    const form = document.getElementById("rateForm");
+    if (form) form.reset();
+
+    let rateObj = null;
+    if (isEdit) {
+      if (typeof rateIdOrData === "object" && rateIdOrData !== null) {
+        rateObj = rateIdOrData;
+      } else if (rateIdOrData !== null) {
+        rateObj = state.rateOverrides.find(item => item.rateId === rateIdOrData);
+      }
+    }
+
+    if (isEdit && rateObj) {
+      document.getElementById("rateModalTitle").innerText = "Edit Dynamic Pricing Rule";
+      document.getElementById("rateFormId").value = rateObj.rateId || "";
+      document.getElementById("ratePackageName").value = rateObj.packageName || "";
+      document.getElementById("rateDescription").value = rateObj.packageDescription || "";
+      document.getElementById("rateStartDate").value = rateObj.startDate || "";
+      document.getElementById("rateEndDate").value = rateObj.endDate || "";
+      document.getElementById("rateMultiplier").value = Number(rateObj.rateMultiplier || 1.0).toFixed(2);
+      document.getElementById("rateMinNights").value = rateObj.minNights || 1;
+      document.getElementById("rateRoomSelect").value = rateObj.roomId || "";
+      document.getElementById("rateIsActive").checked = Boolean(rateObj.isActive);
+    } else {
+      document.getElementById("rateModalTitle").innerText = "Add Dynamic Pricing Rule";
+      document.getElementById("rateFormId").value = "";
+      document.getElementById("ratePackageName").value = "";
+      document.getElementById("rateDescription").value = "";
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      document.getElementById("rateStartDate").value = todayStr;
+      document.getElementById("rateEndDate").value = todayStr;
+      document.getElementById("rateMultiplier").value = "1.00";
+      document.getElementById("rateMinNights").value = "1";
+      document.getElementById("rateRoomSelect").value = "";
+      document.getElementById("rateIsActive").checked = true;
+    }
+
+    document.getElementById("rateModal").classList.add("active");
+  };
+
+  window.closeRateModal = function () {
+    document.getElementById("rateModal").classList.remove("active");
+  };
+
+  window.submitRate = async function (event) {
+    event.preventDefault();
+    const rateId = document.getElementById("rateFormId").value;
+    const packageName = document.getElementById("ratePackageName").value.trim();
+    const packageDescription = document.getElementById("rateDescription").value.trim();
+    const startDate = document.getElementById("rateStartDate").value;
+    const endDate = document.getElementById("rateEndDate").value;
+    const rateMultiplier = parseFloat(document.getElementById("rateMultiplier").value);
+    const minNights = parseInt(document.getElementById("rateMinNights").value, 10);
+    const roomIdVal = document.getElementById("rateRoomSelect").value;
+    const isActive = document.getElementById("rateIsActive").checked;
+
+    if (!packageName) {
+      showToast("Package or rule name is required.", "warning");
+      return;
+    }
+    if (!startDate || !endDate) {
+      showToast("Both start date and end date are required.", "warning");
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      showToast("End date cannot be earlier than start date.", "warning");
+      return;
+    }
+
+    const submitBtn = document.getElementById("rateSubmitBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Saving Rule...";
+
+    try {
+      const payload = {
+        packageName,
+        packageDescription,
+        startDate,
+        endDate,
+        rateMultiplier,
+        minNights: minNights || 1,
+        roomId: roomIdVal ? parseInt(roomIdVal, 10) : null,
+        isActive
+      };
+
+      let res;
+      if (rateId) {
+        res = await adminFetch(`/api/admin/rates/overrides/${rateId}`, {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await adminFetch("/api/admin/rates/overrides", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to save rate override.");
+      }
+
+      showToast(rateId ? "Pricing rule updated successfully!" : "Dynamic pricing rule created successfully!");
+      closeRateModal();
+      loadRateOverrides();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Save Pricing Rule";
+    }
+  };
+
+  window.toggleRate = async function (rateId) {
+    try {
+      const res = await adminFetch(`/api/admin/rates/overrides/${rateId}/toggle`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to toggle rule status.");
+      }
+      showToast("Rate override status toggled.");
+      loadRateOverrides();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  };
+
+  window.deleteRate = function (rateId) {
+    showConfirmDialog(
+      "Delete Pricing Rule",
+      `Are you sure you want to permanently delete rate override <strong>#${rateId}</strong>?`,
+      "Delete Rule",
+      async () => {
+        try {
+          const res = await adminFetch(`/api/admin/rates/overrides/${rateId}`, { method: "DELETE" });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || "Failed to delete rate override.");
+          }
+          showToast("Rate override rule deleted.");
+          loadRateOverrides();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+    );
+  };
+
+  // ----------------------------------------------------
   // ADMIN SECURITY MODAL
   // ----------------------------------------------------
   function showAdminKeyModal() {
@@ -1232,6 +1753,9 @@
   // INITIALIZATION ON LOAD
   // ----------------------------------------------------
   document.addEventListener("DOMContentLoaded", () => {
+    // Pre-load rooms for dropdown filters & modals
+    loadRooms();
+
     // Check hash or URL query param for tab
     const urlParams = new URLSearchParams(window.location.search);
     const queryTab = urlParams.get("tab");

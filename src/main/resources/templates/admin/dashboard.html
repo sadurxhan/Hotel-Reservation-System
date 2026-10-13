@@ -66,6 +66,20 @@
                 <span id="refundNavBadge" class="count-badge" style="display: none;">0</span>
             </a>
 
+            <div class="nav-section-title" style="margin-top: 14px;">Availability &amp; Rates</div>
+            <a class="nav-item" data-tab="calendar" onclick="switchTab('calendar')">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="12" x2="12" y1="14" y2="14"/><line x1="16" x2="16" y1="14" y2="14"/></svg>
+                </span>
+                <span>📅 Calendar Blocks</span>
+            </a>
+            <a class="nav-item" data-tab="rates" onclick="switchTab('rates')">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </span>
+                <span>📈 Dynamic Pricing &amp; Packages</span>
+            </a>
+
             <div class="nav-section-title" style="margin-top: 14px;">Guest Experience</div>
             <a class="nav-item" data-tab="menu" onclick="switchTab('menu')">
                 <span class="icon">
@@ -468,6 +482,113 @@
                 </div>
             </section>
 
+            <!-- ================= TAB 9: CALENDAR BLOCKS ================= -->
+            <section id="tab-calendar" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Calendar Availability &amp; Maintenance Blocks</div>
+                            <span style="font-size: 0.8rem; color: #64748B;">Lock dates for villa repairs, owner stays, or private maintenance</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="loadCalendarBlocks()">Refresh</button>
+                            <button class="btn btn-primary btn-sm" onclick="openBlockModal()">+ Add Block</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filters -->
+                        <div class="table-filter-bar">
+                            <div class="filter-group">
+                                <input type="text" id="blockSearchInput" class="input-search" placeholder="Search by date, room, reason..." oninput="handleBlockFilter()" style="width: 260px;">
+                                <select id="blockRoomFilter" class="select-filter" onchange="handleBlockFilter()">
+                                    <option value="ALL">All Scopes</option>
+                                    <option value="Entire Villa">Entire Villa Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Block ID</th>
+                                        <th>Date</th>
+                                        <th>Room / Villa Scope</th>
+                                        <th>Reason / Source</th>
+                                        <th>Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendarBlocksTbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination-bar">
+                            <span id="blockCountNotice">Showing calendar blocks</span>
+                            <div class="pagination-controls">
+                                <button id="blockPrevBtn" class="page-btn" onclick="blockPagePrev()" disabled>&larr; Previous</button>
+                                <button id="blockNextBtn" class="page-btn" onclick="blockPageNext()" disabled>Next &rarr;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= TAB 10: DYNAMIC PRICING & PACKAGES ================= -->
+            <section id="tab-rates" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Dynamic Pricing Engine &amp; Promotional Packages</div>
+                            <span style="font-size: 0.8rem; color: #64748B;">Define seasonal surge multipliers, weekend packages, and promotional rates</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="loadRateOverrides()">Refresh</button>
+                            <button class="btn btn-primary btn-sm" onclick="openRateModal()">+ Add Pricing Rule</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filters -->
+                        <div class="table-filter-bar">
+                            <div class="filter-group">
+                                <input type="text" id="rateSearchInput" class="input-search" placeholder="Search by package or rule name..." oninput="handleRateFilter()" style="width: 260px;">
+                                <select id="rateStatusSelect" class="select-filter" onchange="handleRateFilter()">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="ACTIVE">ACTIVE Only</option>
+                                    <option value="INACTIVE">INACTIVE Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Package / Rule Name</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Multiplier</th>
+                                        <th>Min Nights</th>
+                                        <th>Scope</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ratesTbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </div>
     </main>
 
@@ -595,6 +716,111 @@
                 <button type="button" class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
                 <button type="button" id="confirmModalBtn" class="btn btn-primary" onclick="handleConfirmSubmit()">Confirm</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADD CALENDAR BLOCK ================= -->
+    <div id="blockModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 id="blockModalTitle" class="modal-title">Add Calendar Block</h3>
+                <button class="modal-close" onclick="closeBlockModal()">&times;</button>
+            </div>
+            <form id="blockForm" onsubmit="submitBlock(event)">
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="date" id="blockStartDate" name="startDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="blockEndDate" name="endDate" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Room / Villa Scope</label>
+                        <select id="blockRoomSelect" name="roomId" class="form-control">
+                            <option value="">Entire Villa (Property-Wide Maintenance)</option>
+                        </select>
+                        <small style="color: #64748B; font-size: 0.76rem; margin-top: 4px; display: block;">Select a specific room for repair logs, or Entire Villa to block guest bookings property-wide.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Reason / Source Description</label>
+                        <input type="text" id="blockReason" name="reason" class="form-control" placeholder="e.g. Roof repairs, AC service, Private owner stay" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeBlockModal()">Cancel</button>
+                    <button type="submit" id="blockSubmitBtn" class="btn btn-primary">Save Block</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: ADD / EDIT RATE OVERRIDE ================= -->
+    <div id="rateModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 id="rateModalTitle" class="modal-title">Add Dynamic Pricing Rule</h3>
+                <button class="modal-close" onclick="closeRateModal()">&times;</button>
+            </div>
+            <form id="rateForm" onsubmit="submitRate(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="rateFormId" name="rateId">
+
+                    <div class="form-group">
+                        <label>Package / Rule Name</label>
+                        <input type="text" id="ratePackageName" name="packageName" class="form-control" placeholder="e.g. Monsoon Special 15% Off, Peak Season Surge" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Package Description</label>
+                        <textarea id="rateDescription" name="packageDescription" class="form-control" rows="2" placeholder="Description of discount, complimentary inclusions, or conditions..."></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="date" id="rateStartDate" name="startDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="rateEndDate" name="endDate" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label>Rate Multiplier</label>
+                            <input type="number" step="0.01" min="0.10" max="5.00" id="rateMultiplier" name="rateMultiplier" class="form-control" value="1.00" required>
+                            <small style="color: #64748B; font-size: 0.74rem; display: block; margin-top: 3px;">1.20 = +20% surge | 0.85 = 15% discount</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Nights</label>
+                            <input type="number" min="1" max="30" id="rateMinNights" name="minNights" class="form-control" value="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Scope (Room or Entire Villa)</label>
+                        <select id="rateRoomSelect" name="roomId" class="form-control">
+                            <option value="">Entire Villa / All Rooms</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                        <input type="checkbox" id="rateIsActive" name="isActive" value="true" checked>
+                        <label for="rateIsActive" style="margin-bottom: 0; cursor: pointer;">Rule is Active (Applied dynamically during pricing calculations)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRateModal()">Cancel</button>
+                    <button type="submit" id="rateSubmitBtn" class="btn btn-primary">Save Pricing Rule</button>
+                </div>
+            </form>
         </div>
     </div>
 

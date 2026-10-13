@@ -60,6 +60,9 @@ public class CalendarAdminService {
         String sourceTag = (reason != null && !reason.trim().isEmpty())
                 ? "MANUAL_ADMIN: " + reason.trim()
                 : "MANUAL_ADMIN";
+        if (sourceTag.length() > 50) {
+            sourceTag = sourceTag.substring(0, 50);
+        }
 
         List<CalendarBlock> savedBlocks = new ArrayList<>();
 
