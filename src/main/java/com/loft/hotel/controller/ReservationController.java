@@ -2,6 +2,7 @@ package com.loft.hotel.controller;
 
 import com.loft.hotel.dto.BookingRequest;
 import com.loft.hotel.entity.Reservation;
+import com.loft.hotel.service.CancellationService;
 import com.loft.hotel.service.ReservationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
