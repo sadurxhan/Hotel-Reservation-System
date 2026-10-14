@@ -334,20 +334,27 @@
         const data = await response.json().catch(() => null);
 
         if (response.ok && data) {
-          form.reset();
+          const cId = document.getElementById("cancelReservationId");
+          const cEmail = document.getElementById("cancelEmail");
+          const cReason = document.getElementById("cancelReason");
+          if (cId) cId.value = "";
+          if (cEmail) cEmail.value = "";
+          if (cReason) cReason.value = "";
+
           if (feedback) {
             if (data.cancellationStatus === "REJECTED") {
               feedback.className = "inquiry-feedback warning";
               feedback.innerText = "Your cancellation request was submitted, but check-in is within 2 days so it cannot be cancelled as per policy. Your booking remains active.";
             } else {
               feedback.className = "inquiry-feedback success";
-              feedback.innerText = `Cancellation request for Reservation #${data.reservationId} has been submitted successfully. A confirmation email has been dispatched.`;
+              feedback.innerText = `✓ Cancellation request for Reservation #${data.reservationId} has been submitted successfully. Management will review your request.`;
             }
           }
-          // Reset view to standard inquiry after successful cancellation submission
-          handleInquirySubjectChange("General Inquiry");
         } else {
-          const errMsg = (data && data.message) ? data.message : "Unable to submit cancellation request. Please verify your reservation ID and email.";
+          let errMsg = (data && data.message) ? data.message : "Unable to submit cancellation request. Please verify your reservation ID and email.";
+          if (errMsg.toLowerCase().includes("already pending")) {
+            errMsg = `A cancellation request for Reservation #${reservationId} has already been submitted and is currently pending review.`;
+          }
           throw new Error(errMsg);
         }
       } else {

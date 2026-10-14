@@ -40,19 +40,25 @@ public class RefundService {
         this.mailService = mailService;
     }
 
-    // Called by CancellationService after a cancellation is approved.
+    // Called by CancellationService after a guest cancellation request is approved.
     // Policy: 5+ days = 100%, 3-4 days = 75%, 0-2 days or past check-in = no refund (no record created).
-    // Returns empty if no refund is applicable.
     @Transactional
     public Optional<Refund> createRefundIfApplicable(Reservation reservation, LocalDate requestDate) {
+        return createRefund(reservation, requestDate, false);
+    }
+
+    // Called when the administrator directly cancels a reservation (guaranteed 100% refund).
+    @Transactional
+    public Optional<Refund> createAdminFullRefund(Reservation reservation) {
+        return createRefund(reservation, LocalDate.now(), true);
+    }
+
+    private Optional<Refund> createRefund(Reservation reservation, LocalDate requestDate, boolean fullRefund) {
         if (reservation == null) {
             throw new IllegalArgumentException("Reservation cannot be null.");
         }
         if (requestDate == null) {
             throw new IllegalArgumentException("Cancellation request date cannot be null.");
-        }
-        if (reservation.getCheckInDate() == null) {
-            throw new IllegalStateException("Reservation check-in date is missing.");
         }
 
         Optional<Payment> paid = paymentRepository.findByReservationIdAndPaymentStatus(
@@ -64,10 +70,21 @@ public class RefundService {
             throw new IllegalStateException("A refund already exists for this payment.");
         }
 
-        // Negative days (past check-in) fall through to 0% and create no refund record.
-        long days = ChronoUnit.DAYS.between(requestDate, reservation.getCheckInDate());
-        int percent = days >= 5 ? 100 : (days >= 3 ? 75 : 0);
-        if (percent == 0) return Optional.empty();
+        int percent;
+        String reason;
+        if (fullRefund) {
+            percent = 100;
+            reason = "100% full refund (cancelled directly by hotel administration).";
+        } else {
+            if (reservation.getCheckInDate() == null) {
+                throw new IllegalStateException("Reservation check-in date is missing.");
+            }
+            // Negative days (past check-in) fall through to 0% and create no refund record.
+            long days = ChronoUnit.DAYS.between(requestDate, reservation.getCheckInDate());
+            percent = days >= 5 ? 100 : (days >= 3 ? 75 : 0);
+            if (percent == 0) return Optional.empty();
+            reason = percent + "% refund per cancellation policy (" + days + " days before check-in).";
+        }
 
         BigDecimal amount = payment.getAmount()
                 .multiply(BigDecimal.valueOf(percent))
@@ -75,7 +92,7 @@ public class RefundService {
 
         Refund refund = new Refund(UUID.randomUUID().toString(), payment.getPaymentId(),
                 Refund.RefundStatus.PENDING,
-                percent + "% refund per cancellation policy (" + days + " days before check-in).",
+                reason,
                 amount);
         return Optional.of(refundRepository.save(refund));
     }

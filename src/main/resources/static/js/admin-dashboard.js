@@ -381,6 +381,9 @@
           </td>
           <td>
             <div class="table-actions">
+              ${((r.paymentStatus || "").toUpperCase() === "PAID" && (r.reservationStatus || "").toUpperCase() !== "CANCELLED") ? `
+                <button class="btn btn-sm btn-secondary" onclick="cancelReservationAction(${r.reservationId})" title="Cancel Booking" style="color: #EF4444;">Cancel</button>
+              ` : ""}
               <button class="btn btn-sm btn-secondary" onclick="viewReservationModal(${r.reservationId})">View</button>
             </div>
           </td>
@@ -426,7 +429,7 @@
   window.cancelReservationAction = async function (id) {
     showConfirmDialog(
       "Cancel Reservation",
-      `Are you sure you want to cancel reservation <strong>#${id}</strong>? This will release reserved dates on the calendar.`,
+      `Are you sure you want to cancel reservation <strong>#${id}</strong>? This will release reserved calendar dates, record the cancellation, and compute any eligible guest refund.`,
       "Yes, Cancel Booking",
       async () => {
         try {
@@ -435,9 +438,14 @@
             const errText = await res.text();
             throw new Error(errText || "Unable to cancel booking.");
           }
-          showToast(`Reservation #${id} has been cancelled.`);
+          showToast(`Reservation #${id} has been cancelled. Navigating to Cancellation ledger...`);
           loadReservations();
           loadOverview();
+          loadCancellations();
+          loadRefunds();
+          setTimeout(() => {
+            switchTab("cancellations");
+          }, 800);
         } catch (err) {
           showToast(err.message, "error");
         }
