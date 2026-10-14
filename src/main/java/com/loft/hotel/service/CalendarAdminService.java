@@ -31,12 +31,6 @@ public class CalendarAdminService {
 
     /**
      * Blocks a date interval for maintenance, repairs, or private owner use.
-     *
-     * @param roomId    Specify which room needs repairs (for owner records). Pass null for property-wide maintenance/private stay.
-     * @param startDate First day of the maintenance window (inclusive)
-     * @param endDate   Last day of the maintenance window (inclusive)
-     * @param reason    Admin description (e.g., "Pool Maintenance", "Room 1 AC Repair")
-     * @return List of persisted CalendarBlock records
      */
     @Transactional
     public List<CalendarBlock> blockDateRange(Integer roomId, LocalDate startDate, LocalDate endDate, String reason) {
@@ -92,9 +86,6 @@ public class CalendarAdminService {
 
     /**
      * Unblocks a date range or specific date.
-     *
-     * @param roomId Optional room filter (null removes all blocks on that date)
-     * @param date   The date to reopen
      */
     @Transactional
     public void unblockDate(Integer roomId, LocalDate date) {

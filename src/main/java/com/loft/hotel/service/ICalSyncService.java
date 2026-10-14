@@ -48,11 +48,6 @@ public class ICalSyncService {
 
     /**
      * Parses an external iCalendar (.ics) stream and persists new blocked dates.
-     *
-     * @param icalUrl      Web URL or raw resource location of the .ics feed
-     * @param roomId       Optional: Room ID if the feed belongs to one room, or null for whole villa
-     * @param platformName Name of the platform (e.g., "Airbnb", "Booking.com")
-     * @return count of newly inserted blocked days
      */
     @Transactional
     public int syncFromUrl(String icalUrl, Integer roomId, String platformName) {

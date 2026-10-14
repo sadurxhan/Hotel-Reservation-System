@@ -34,11 +34,6 @@ public class PricingEngineService {
 
     /**
      * Calculates the dynamic nightly rate across the stay duration.
-     *
-     * @param roomId       The room ID selected
-     * @param checkInDate  Guest arrival date
-     * @param checkOutDate Guest departure date
-     * @return PriceCalculationResponseDTO containing nightly breakdowns and total cost
      */
     public PriceCalculationResponseDTO calculatePrice(Integer roomId, LocalDate checkInDate, LocalDate checkOutDate) {
 
