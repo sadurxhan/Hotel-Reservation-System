@@ -1,11 +1,15 @@
 package com.loft.hotel.service;
 
+import com.loft.hotel.entity.CalendarBlock;
 import com.loft.hotel.entity.Cancellation;
 import com.loft.hotel.entity.Reservation;
+import com.loft.hotel.entity.ReservationRoomSelection;
 import com.loft.hotel.entity.ReservationStatus;
 import com.loft.hotel.exception.ResourceNotFoundException;
+import com.loft.hotel.repository.CalendarBlockRepository;
 import com.loft.hotel.repository.CancellationRepository;
 import com.loft.hotel.repository.ReservationRepository;
+import com.loft.hotel.repository.ReservationRoomSelectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
@@ -27,15 +31,21 @@ public class CancellationService {
     private final ReservationRepository reservationRepository;
     private final RefundService refundService;
     private final MailService mailService;
+    private final ReservationRoomSelectionRepository selectionRepository;
+    private final CalendarBlockRepository calendarBlockRepository;
 
     public CancellationService(CancellationRepository cancellationRepository,
                                ReservationRepository reservationRepository,
                                RefundService refundService,
-                               MailService mailService) {
+                               MailService mailService,
+                               ReservationRoomSelectionRepository selectionRepository,
+                               CalendarBlockRepository calendarBlockRepository) {
         this.cancellationRepository = cancellationRepository;
         this.reservationRepository = reservationRepository;
         this.refundService = refundService;
         this.mailService = mailService;
+        this.selectionRepository = selectionRepository;
+        this.calendarBlockRepository = calendarBlockRepository;
     }
 
     // ---------- GUEST: submit request (booking reference + email + reason) ----------
@@ -99,7 +109,7 @@ public class CancellationService {
         Reservation reservation = activeReservation(c.getReservationId());
 
         // refund policy uses the date the guest asked, not the date admin clicked
-        applyCancellation(reservation, c.getRequestedDateTime().toLocalDate());
+        applyCancellation(reservation, c.getRequestedDateTime().toLocalDate(), false);
 
         c.setCancellationStatus(Cancellation.CancellationStatus.APPROVED);
         return cancellationRepository.save(c);
@@ -124,13 +134,13 @@ public class CancellationService {
         return saved;
     }
 
-    // ---------- ADMIN: cancel directly (saved as APPROVED straight away) ----------
+    // ---------- ADMIN: cancel directly (saved as APPROVED straight away, guaranteed 100% refund) ----------
     @Transactional
     public Cancellation adminCancel(Integer reservationId, String reason) {
         Reservation reservation = activeReservation(reservationId);
         Cancellation c = create(reservation, Cancellation.RequestedBy.Admin, reason,
                 Cancellation.CancellationStatus.APPROVED);
-        applyCancellation(reservation, LocalDate.now());
+        applyCancellation(reservation, LocalDate.now(), true);
         return c;
     }
 
@@ -218,12 +228,32 @@ public class CancellationService {
 
     // Shared by guest approval and direct admin cancellation:
     // cancel the reservation, create the refund if applicable, email the guest
-    private void applyCancellation(Reservation reservation, LocalDate requestDate) {
+    private void applyCancellation(Reservation reservation, LocalDate requestDate, boolean isAdminCancel) {
         reservation.setReservationStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
 
-        String refundText = refundService.createRefundIfApplicable(reservation, requestDate)
-                .map(refund -> "A refund of LKR " + refund.getRefundAmount()
+        // Clear calendar blocks created for this reservation to immediately release room availability
+        if (selectionRepository != null && calendarBlockRepository != null) {
+            List<ReservationRoomSelection> selections = selectionRepository.findAll();
+            for (ReservationRoomSelection sel : selections) {
+                if (sel.getReservation() != null && sel.getReservation().getReservationId().equals(reservation.getReservationId())) {
+                    Integer roomId = sel.getRoom().getRoomId();
+                    LocalDate date = reservation.getCheckInDate();
+                    while (date != null && reservation.getCheckOutDate() != null && date.isBefore(reservation.getCheckOutDate())) {
+                        List<CalendarBlock> blocks = calendarBlockRepository.findByRoom_RoomIdAndBlockedDate(roomId, date);
+                        calendarBlockRepository.deleteAll(blocks);
+                        date = date.plusDays(1);
+                    }
+                }
+            }
+        }
+
+        java.util.Optional<com.loft.hotel.entity.Refund> refundOpt = isAdminCancel
+                ? refundService.createAdminFullRefund(reservation)
+                : refundService.createRefundIfApplicable(reservation, requestDate);
+
+        String refundText = refundOpt
+                .map(refund -> "A full refund of LKR " + refund.getRefundAmount()
                         + " is pending. The owner will process the payment manually.")
                 .orElse("No refund is applicable.");
 

@@ -2,6 +2,7 @@ package com.loft.hotel.controller;
 
 import com.loft.hotel.dto.BookingRequest;
 import com.loft.hotel.entity.Reservation;
+import com.loft.hotel.service.CancellationService;
 import com.loft.hotel.service.ReservationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,12 @@ import java.time.LocalDate;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final CancellationService cancellationService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(ReservationService reservationService,
+                                 CancellationService cancellationService) {
         this.reservationService = reservationService;
+        this.cancellationService = cancellationService;
     }
 
     // POST /api/reservations
@@ -78,7 +82,14 @@ public class ReservationController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelReservation(@PathVariable Integer id) {
         try {
-            return ResponseEntity.ok(reservationService.cancel(id));
+            // First attempt full admin cancellation to generate Cancellation and Refund records & notify guest
+            try {
+                cancellationService.adminCancel(id, "Cancelled directly by Administrator");
+                return ResponseEntity.ok(reservationService.getById(id));
+            } catch (Exception ex) {
+                // Fallback to basic reservation cancel if already cancelled or has conflicting pending record
+                return ResponseEntity.ok(reservationService.cancel(id));
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }

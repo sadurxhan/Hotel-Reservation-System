@@ -9,6 +9,7 @@ import com.loft.hotel.repository.ReservationRepository;
 import com.loft.hotel.service.InvoiceService;
 import com.loft.hotel.service.PayHereService;
 import com.loft.hotel.service.PaymentService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class PayHereController {
 
     // 1) Booking done -> guest lands here. Shows summary + "Pay Now".
     @GetMapping("/checkout")
-    public String checkout(@RequestParam Integer reservationId, HttpSession session, Model model) {
+    public String checkout(@RequestParam Integer reservationId, HttpSession session, Model model, HttpServletRequest request) {
 
         // Reservation IDs are sequential, so only the browser session that just made
         // this booking may open its checkout (the page contains guest email/phone).
@@ -72,6 +73,7 @@ public class PayHereController {
 
         String amount = payment.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString();
         Guest guest = reservation.getGuest();
+        String effectiveBaseUrl = resolveBaseUrl(request);
 
         model.addAttribute("reservation", reservation);
         model.addAttribute("amount", amount);
@@ -80,11 +82,42 @@ public class PayHereController {
         model.addAttribute("orderId", payment.getPaymentId());
         model.addAttribute("currency", "LKR");
         model.addAttribute("hash", payHere.checkoutHash(payment.getPaymentId(), amount, "LKR"));
-        model.addAttribute("returnUrl", baseUrl + "/payment/result?paymentId=" + payment.getPaymentId());
-        model.addAttribute("cancelUrl", baseUrl + "/checkout?reservationId=" + reservationId);
-        model.addAttribute("notifyUrl", baseUrl + "/payhere/notify");
+        model.addAttribute("returnUrl", effectiveBaseUrl + "/payment/result?paymentId=" + payment.getPaymentId());
+        model.addAttribute("cancelUrl", effectiveBaseUrl + "/checkout?reservationId=" + reservationId);
+        model.addAttribute("notifyUrl", effectiveBaseUrl + "/payhere/notify");
         model.addAttribute("guest", guest);
         return "billing/checkout";
+    }
+
+    private String resolveBaseUrl(HttpServletRequest request) {
+        // 1. If explicit non-localhost APP_BASE_URL is configured, use it
+        if (baseUrl != null && !baseUrl.isBlank() && !baseUrl.contains("localhost")) {
+            return baseUrl.replaceAll("/+$", "");
+        }
+
+        // 2. Railway automatically provides RAILWAY_PUBLIC_DOMAIN (e.g. your-app.up.railway.app)
+        String railwayDomain = System.getenv("RAILWAY_PUBLIC_DOMAIN");
+        if (railwayDomain != null && !railwayDomain.isBlank()) {
+            return "https://" + railwayDomain.replaceAll("/+$", "");
+        }
+
+        // 3. Infer from current HTTP request headers (reverse proxy / Railway forwards headers)
+        if (request != null) {
+            String forwardedProto = request.getHeader("X-Forwarded-Proto");
+            String forwardedHost = request.getHeader("X-Forwarded-Host");
+            if (forwardedHost != null && !forwardedHost.isBlank()) {
+                String proto = (forwardedProto != null && !forwardedProto.isBlank()) ? forwardedProto : "https";
+                return proto + "://" + forwardedHost.replaceAll("/+$", "");
+            }
+            String host = request.getHeader("Host");
+            if (host != null && !host.isBlank() && !host.contains("localhost")) {
+                String proto = request.isSecure() || "https".equalsIgnoreCase(forwardedProto) ? "https" : "http";
+                return proto + "://" + host.replaceAll("/+$", "");
+            }
+        }
+
+        // 4. Localhost fallback
+        return (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "http://localhost:8081";
     }
 
     // 2) PayHere calls this server-to-server after the payment
